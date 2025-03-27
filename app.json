@@ -32,10 +32,24 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "supabase_data": {
+        "SUPABASE_URL": "https://ygjjanjokmerrixypbon.supabase.co",
+        "SUPABASE_ANON_PUBLIC": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlnamphbmpva21lcnJpeHlwYm9uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzUxMTgzNDAsImV4cCI6MjA1MDY5NDM0MH0.YO9NOh0TQbMByeq1rdpM-pHlp-32jUL_9j1k864ILAA"
+      },
+      "eas": {
+        "projectId": "c5b9d95a-3375-4c99-af45-e823908e1b30"
+      }
+    },
+    "owner": "47depie"
   }
 }

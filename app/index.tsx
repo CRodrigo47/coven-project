@@ -2,9 +2,11 @@ import { Button, Text, View } from "react-native";
 import "../global.css";
 import { Link, useRouter } from "expo-router";
 import { Logo } from "@/constants/covenIcons";
+import GoogleAuth from "@/components/googleAuth";
 
 export default function LogIn() {
   const router = useRouter();
+  
 
   return (
     <View
@@ -20,6 +22,9 @@ export default function LogIn() {
       </View>
       <View className="mt-32">
         <Text>Aqui irá login</Text>
+      </View>
+      <View style={{ justifyContent: "center", alignItems: "center", height: 30, width: 300 }}>
+        <GoogleAuth />
       </View>
       <View className="mt-32">
         <Button

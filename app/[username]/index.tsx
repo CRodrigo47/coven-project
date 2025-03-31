@@ -42,7 +42,7 @@ const ProfileViewer = () => {
   }, [username]);
 
   return (
-    <View>
+    <View className="h-full" style={{ backgroundColor: "#fcf5d7" }}>
       <Text>Perfil de {userProfile?.name}</Text>
     </View>
   );

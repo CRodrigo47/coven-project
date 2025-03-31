@@ -1,0 +1,11 @@
+{
+    "build": {
+      "android": {
+        "distribution": "store"
+      },
+      "ios": {
+        "distribution": "store"
+      }
+    }
+  }
+  

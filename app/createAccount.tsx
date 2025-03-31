@@ -1,5 +1,4 @@
 import { Button, Text, View } from "react-native";
-import "../global.css";
 import { useRouter } from "expo-router";
 
 export default function CreateAccount() {
@@ -21,7 +20,7 @@ export default function CreateAccount() {
       <View>
         <Button
           title="Create Account"
-          onPress={() => router.navigate("/mainTabs/gatheringTabs")}
+          onPress={() => router.navigate("/verifyEmail")}
         />
       </View>
     </View>

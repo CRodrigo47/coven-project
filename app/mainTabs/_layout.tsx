@@ -14,7 +14,7 @@ export default function MainTabsLayout() {
         headerShown: false,
         headerTintColor: "white",
         tabBarStyle: {
-          backgroundColor: "green",
+          backgroundColor: "violet",
         },
       }}
     >

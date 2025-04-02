@@ -8,22 +8,38 @@
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "Coven necesita acceso a tus fotos para que puedas seleccionar una imagen de perfil.",
+        "NSPhotoLibraryAddUsageDescription": "Coven necesita guardar imágenes en tu galería."
+      }
     },
+
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
+      "permissions": [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.INTERNET",
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.CAMERA"
+      ],
+      "usesCleartextTraffic": true,
       "package": "com.coven47depie.conveapp"
     },
+
     "web": {
       "bundler": "metro",
       "output": "static",
       "favicon": "./assets/images/favicon.png",
       "bundledWebDependencies": ["expo-auth-session"]
     },
+
     "plugins": [
       "expo-router",
       [
@@ -35,11 +51,21 @@
           "backgroundColor": "#ffffff"
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Coven necesita acceso a tus fotos para que puedas seleccionar una imagen de perfil.",
+          "cameraPermission": "Coven necesita acceso a tu cámara para tomar fotos.",
+          "mediaTypes": "Images" // Puede ser "Images", "Videos" o "All"
+        }
+      ]
     ],
+
     "experiments": {
       "typedRoutes": true
     },
+
     "extra": {
       "router": {
         "origin": false
@@ -52,6 +78,7 @@
         "projectId": "c5b9d95a-3375-4c99-af45-e823908e1b30"
       }
     },
+
     "owner": "47depie"
   }
 }

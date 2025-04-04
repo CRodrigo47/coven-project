@@ -3,6 +3,7 @@ import "../global.css";
 import { Link, useRouter } from "expo-router";
 import { Logo } from "@/constants/covenIcons";
 import GoogleAuth from "@/components/googleAuth";
+import LoginForm from "@/components/logInForm";
 
 export default function LogIn() {
   const router = useRouter();
@@ -20,9 +21,7 @@ export default function LogIn() {
       <View className="mt-32">
         <Logo></Logo>
       </View>
-      <View className="mt-32">
-        <Text>Aqui irá login</Text>
-      </View>
+      <LoginForm/>
       <View style={{ justifyContent: "center", alignItems: "center", height: 30, width: 300 }}>
         <GoogleAuth />
       </View>

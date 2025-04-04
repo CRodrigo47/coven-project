@@ -22,7 +22,7 @@ export default function CreateAccount() {
       <View>
         <Button
           title="boton antiguo"
-          onPress={() => router.navigate("/verifyEmail")}
+          onPress={() => router.navigate("/")}
         />
       </View>
     </View>

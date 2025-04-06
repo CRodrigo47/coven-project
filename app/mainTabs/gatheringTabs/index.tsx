@@ -62,7 +62,7 @@ export default function Gatherings() {
       />
       <Button
         title="Ir al perfil de Christian"
-        onPress={() => router.push("/christian.rodrigo")}
+        onPress={() => router.push("/christian.admin")}
       />
     </View>
   );

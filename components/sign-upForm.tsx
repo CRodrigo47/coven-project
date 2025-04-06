@@ -79,48 +79,42 @@ export default function RegisterForm() {
 
   const uploadImage = async (uri: string, userId: string) => {
     try {
-      // 1. Obtener la extensión del archivo
-      const fileExtension = uri.split('.').pop()?.toLowerCase() || 'jpg';
-      const contentType = `image/${fileExtension === 'png' ? 'png' : 'jpeg'}`;
+      // 1. Determinar tipo MIME y extensión
+      const isBase64 = uri.startsWith('data:image');
+      let mimeType = isBase64 ? uri.split(':')[1].split(';')[0] : 
+                     uri.endsWith('.png') ? 'image/png' : 'image/jpeg';
+      const fileExtension = mimeType.split('/')[1];
   
       // 2. Convertir a blob
-      const response = await fetch(uri);
-      const blob = await response.blob();
+      const blob = isBase64 
+        ? await (await fetch(uri)).blob()
+        : await (await fetch(uri)).blob();
   
       // 3. Subir a Supabase Storage
       const fileName = `user_icons/${userId}/avatar.${fileExtension}`;
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(fileName, blob, {
-          contentType,
-          upsert: true,
-          cacheControl: '3600'
+        .upload(fileName, blob, { 
+          contentType: mimeType,
+          upsert: true 
         });
-        console.log(fileName)
   
       if (uploadError) throw uploadError;
   
-      // 4. Obtener URL pública con transformación opcional
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(fileName, {
-          transform: {
-            width: 200,
-            height: 200,
-            quality: 80,
-            resize: 'cover'
-          }
-        });
+      // 4. Construir URL directa (object/public) - FORMA CORRECTA
+      const storageUrl = supabase.storage.from('avatars').getPublicUrl('').data.publicUrl;
+      const baseUrl = storageUrl.split('/storage/v1/object/public/avatars')[0];
+      const directUrl = `${baseUrl}/storage/v1/object/public/avatars/${fileName}`;
   
-      // 5. Actualizar la tabla User
+      // 5. Actualizar usuario con URL directa
       const { error: updateError } = await supabase
         .from('User')
-        .update({ user_icon: publicUrl })
+        .update({ user_icon: directUrl })
         .eq('id', userId);
   
       if (updateError) throw updateError;
   
-      return publicUrl;
+      return directUrl;
     } catch (error) {
       console.error('Error en uploadImage:', error);
       throw error;
@@ -240,6 +234,7 @@ export default function RegisterForm() {
         name: formData.name,
         last_name: formData.last_name,
         user_name: formData.user_name,
+        user_icon: formData.user_icon,
         phone_number: formData.phone_number,
         age: formData.age,
         gender: formData.gender,

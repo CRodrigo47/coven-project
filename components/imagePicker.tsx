@@ -90,10 +90,11 @@ const ImagePickerComponent: React.FC<ImagePickerProps> = ({
   
       // Seleccionar imagen (con la nueva sintaxis)
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaType, // ← Cambio aquí
+        mediaTypes: 'Images' as any,
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.7,
+        base64: false
       });
   
       if (!result.canceled && result.assets[0].uri) {

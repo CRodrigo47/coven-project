@@ -1,42 +1,33 @@
-import { Button, Text, View } from "react-native";
 import "../global.css";
-import { Link, useRouter } from "expo-router";
-import { Logo } from "@/constants/covenIcons";
-import GoogleAuth from "@/components/googleAuth";
-import LoginForm from "@/components/logInForm";
+import { useRouter } from "expo-router";
+import { useAuth } from "@/providers/AuthProvider";
+import { ActivityIndicator, Linking } from "react-native";
+import { useEffect } from "react";
 
-export default function LogIn() {
+export default function Index() {
   const router = useRouter();
-  
+  const { session, loading } = useAuth();
 
-  return (
-    <View
-      className="h-full"
-      style={{
-        flex: 1,
-        alignItems: "center",
-        backgroundColor: "#fcf5d7",
-      }}
-    >
-      <View className="mt-32">
-        <Logo></Logo>
-      </View>
-      <LoginForm/>
-      <View style={{ justifyContent: "center", alignItems: "center", height: 30, width: 300 }}>
-        <GoogleAuth />
-      </View>
-      <View className="mt-32">
-        <Button
-          title="Log In"
-          onPress={() => router.navigate("/mainTabs/gatheringTabs")}
-        />
-        <View>
-          <Text>Aun no tienes cuenta?</Text>
-          <Link href="/createAccount" className="color-blue-600 p-1">
-            Crea una
-          </Link>
-        </View>
-      </View>
-    </View>
-  );
+  useEffect(() => {
+    const subscription = Linking.addEventListener('url', ({ url }) => {
+    });
+    return () => subscription.remove();
+  }, []);
+
+  useEffect(() => {
+    if (!loading) {
+      console.log('Index session check:', session);
+      if (session) {
+        router.replace('/mainTabs/gatheringTabs');
+      } else {
+        router.replace('/auth/LogIn');
+      }
+    }
+  }, [session, loading]);
+
+  if (loading) {
+    return <ActivityIndicator size="large" />;
+  }
+
+  return null;
 }

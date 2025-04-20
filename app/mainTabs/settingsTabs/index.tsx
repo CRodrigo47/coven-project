@@ -2,8 +2,8 @@ import { Text, View } from "react-native";
 
 export default function Settings(){
     return(
-        <View className="h-full" style={{ backgroundColor: "#fcf5d7" }}>
-          <Text>Ventana de ajustes</Text>  
+        <View className="h-full justify-center" style={{ backgroundColor: "#fcf5d7" }}>
+          <Text className="text-center text-4xl">WORK IN PROGRESS</Text>  
         </View>
         
     )

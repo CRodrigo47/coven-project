@@ -7,6 +7,8 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
+  Pressable,
+  Keyboard,
 } from "react-native";
 import { supabase } from "../lib/supabase";
 import { useRouter } from "expo-router";
@@ -24,13 +26,19 @@ export default function LoginForm() {
         email,
         password,
       });
-
+  
       if (error) throw error;
-
-      // Navegar a pantalla principal (manejado por tu sistema de navegación)
-      router.navigate("http://localhost:8081/createAccount");
+  
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session) {
+        router.replace('/mainTabs/gatheringTabs');
+      } else {
+        throw new Error('Session not found after login');
+      }
     } catch (error) {
-      Alert.alert("Error de inicio de sesión", error.message);
+      Alert.alert("Error", error.message);
     } finally {
       setLoading(false);
     }
@@ -62,7 +70,7 @@ export default function LoginForm() {
   };
 
   return (
-    <View style={styles.container}>
+    <View className="pt-20 w-64">
       <TextInput
         style={styles.input}
         placeholder="Email"
@@ -70,6 +78,7 @@ export default function LoginForm() {
         onChangeText={setEmail}
         autoCapitalize="none"
         keyboardType="email-address"
+        className="mb-4"
       />
       <TextInput
         style={styles.input}
@@ -83,12 +92,14 @@ export default function LoginForm() {
         <ActivityIndicator size="large" />
       ) : (
         <>
-          <Button title="Iniciar sesión" onPress={handleLogin} />
-          <Button
-            title="¿Olvidaste tu contraseña?"
-            onPress={handlePasswordReset}
-            color="#888"
-          />
+        <Pressable onPress={handlePasswordReset}>
+            <Text className="text-center pb-2" style={{color: "#6E4894"}}>
+              ¿Olvidaste tu contraseña?
+            </Text>
+          </Pressable>
+          <Pressable onPress={handleLogin}>
+            <Text className="text-center border mt-2 py-2 rounded-l color-white" style={{backgroundColor: "#6E4894"}}>Iniciar sesion</Text>
+          </Pressable>
         </>
       )}
     </View>
@@ -96,14 +107,10 @@ export default function LoginForm() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 20,
-  },
   input: {
     height: 40,
     borderColor: "gray",
     borderWidth: 1,
-    marginBottom: 10,
     paddingHorizontal: 10,
     borderRadius: 5,
   },

@@ -43,7 +43,6 @@ const registerSchema = yup.object({
     .required("La edad es obligatoria")
     .min(13, "Mínimo 13 años")
     .max(120, "Edad máxima 120 años"),
-  gender: yup.string().required("Selecciona un género"),
   interests: yup.array().of(yup.string()).nullable().default([]),
 });
 
@@ -70,7 +69,6 @@ export default function RegisterForm() {
       user_icon: null,
       phone_number: "",
       age: 0,
-      gender: "",
       interests: [],
     },
   });
@@ -79,44 +77,54 @@ export default function RegisterForm() {
 
   const uploadImage = async (uri: string, userId: string) => {
     try {
-      // 1. Determinar tipo MIME y extensión
-      const isBase64 = uri.startsWith('data:image');
-      let mimeType = isBase64 ? uri.split(':')[1].split(';')[0] : 
-                     uri.endsWith('.png') ? 'image/png' : 'image/jpeg';
-      const fileExtension = mimeType.split('/')[1];
+      // 1. Obtener el blob de la imagen
+      let blob;
+      if (uri.startsWith('file://') || uri.startsWith('content://')) {
+        // Para URIs de archivos locales (React Native)
+        const response = await fetch(uri);
+        blob = await response.blob();
+      } else if (uri.startsWith('data:')) {
+        // Para base64
+        const response = await fetch(uri);
+        blob = await response.blob();
+      } else {
+        throw new Error('Formato de imagen no soportado');
+      }
   
-      // 2. Convertir a blob
-      const blob = isBase64 
-        ? await (await fetch(uri)).blob()
-        : await (await fetch(uri)).blob();
+      // 2. Determinar extensión del archivo
+      const fileExt = uri.split('.').pop()?.toLowerCase() || 'jpg';
+      const fileName = `user_avatars/${userId}/avatar.${fileExt}`;
+      const mimeType = `image/${fileExt === 'png' ? 'png' : 'jpeg'}`;
   
       // 3. Subir a Supabase Storage
-      const fileName = `user_icons/${userId}/avatar.${fileExtension}`;
-      const { error: uploadError } = await supabase.storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(fileName, blob, { 
+        .upload(fileName, blob, {
           contentType: mimeType,
-          upsert: true 
+          upsert: true,
+          cacheControl: '3600'
         });
   
       if (uploadError) throw uploadError;
   
-      // 4. Construir URL directa (object/public) - FORMA CORRECTA
-      const storageUrl = supabase.storage.from('avatars').getPublicUrl('').data.publicUrl;
-      const baseUrl = storageUrl.split('/storage/v1/object/public/avatars')[0];
-      const directUrl = `${baseUrl}/storage/v1/object/public/avatars/${fileName}`;
+      // 4. Obtener URL pública
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
   
-      // 5. Actualizar usuario con URL directa
+      if (!publicUrl) throw new Error('No se pudo obtener URL pública');
+  
+      // 5. Actualizar usuario con la nueva URL
       const { error: updateError } = await supabase
         .from('User')
-        .update({ user_icon: directUrl })
+        .update({ user_icon: publicUrl })
         .eq('id', userId);
   
       if (updateError) throw updateError;
   
-      return directUrl;
+      return publicUrl;
     } catch (error) {
-      console.error('Error en uploadImage:', error);
+      console.log('Error en uploadImage:', error);
       throw error;
     }
   };
@@ -160,8 +168,7 @@ export default function RegisterForm() {
             name: formData.name,
             last_name: formData.last_name,
             user_name: formData.user_name
-          },
-          emailRedirectTo: 'tu-app://redirect' // Cambia esto por tu URL de redirección
+          }
         }
       });
   
@@ -174,8 +181,29 @@ export default function RegisterForm() {
   
       if (!authData.user) throw new Error('No se pudo crear el usuario');
   
-      // 3. Actualizar tabla User - NO requerimos sesión aquí
-      const { error: updateError } = await supabase
+      // 3. Esperar 2 segundos para que la sesión se establezca
+      await new Promise(resolve => setTimeout(resolve, 2000));
+  
+      // 4. Verificar si tenemos sesión
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        console.warn("Sesión no disponible aún, pero continuamos el proceso");
+        // No lanzamos error aquí, continuamos igual
+      }
+
+      let userIconUrl = null;
+      if (imageUri && authData.user.id) {
+        try {
+          userIconUrl = await uploadImage(imageUri, authData.user.id);
+        } catch (uploadError) {
+          // console.warn("Error subiendo imagen:", uploadError);                     //COMENTADO POR PROBLEMAS EN ANDROID
+          // Continuamos sin imagen si falla
+        }
+      }
+  
+      // 5. Crear registro en la tabla User
+      const { error: userError } = await supabase
         .from('User')
         .upsert({
           id: authData.user.id,
@@ -183,36 +211,29 @@ export default function RegisterForm() {
           name: formData.name,
           last_name: formData.last_name,
           user_name: formData.user_name,
-          user_icon: formData.user_icon,
+          user_icon: userIconUrl,
           phone_number: formData.phone_number,
           age: formData.age,
-          gender: formData.gender,
-          interests: formData.interests
+          interests: formData.interests,
         });
   
-      if (updateError) throw updateError;
+      // if (userError) {
+      //   console.error("Error al crear usuario en tabla User:", userError);                                     //COMENTADO POR PROBLEMAS EN ANDROID
+      //   // No lanzamos error aquí para no interrumpir el flujo de verificación
+      // }
   
-      // 4. Subir imagen si existe (usando el ID del usuario)
-      if (imageUri && authData.user.id) {
-        try {
-          await uploadImage(imageUri, authData.user.id);
-        } catch (uploadError) {
-          console.warn("No se pudo subir la imagen:", uploadError);
-        }
-      }
   
       setEmailSent(true);
-      Alert.alert(
-        'Verifica tu email',
-        'Te hemos enviado un enlace de confirmación a tu correo electrónico.'
-      );
       
     } catch (error) {
       console.error('Error completo:', error);
-      Alert.alert(
-        'Error',
-        error instanceof Error ? error.message : 'Error desconocido al registrar'
-      );
+      // Mostramos error solo si no es el flujo normal de verificación
+      if (!error.message.includes('Email not confirmed')) {
+        Alert.alert(
+          'Error',
+          error instanceof Error ? error.message : 'Error desconocido al registrar'
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -237,7 +258,6 @@ export default function RegisterForm() {
         user_icon: formData.user_icon,
         phone_number: formData.phone_number,
         age: formData.age,
-        gender: formData.gender,
         interests: formData.interests,
         updated_at: new Date().toISOString()
       };
@@ -258,11 +278,7 @@ export default function RegisterForm() {
         .eq('id', user.id);
   
       if (updateError) throw updateError;
-  
-      Alert.alert(
-        'Perfil actualizado',
-        'Tus datos se han actualizado correctamente'
-      );
+
       
     } catch (error) {
       throw new Error(error instanceof Error ? error.message : 'Error al actualizar usuario existente');
@@ -407,23 +423,6 @@ export default function RegisterForm() {
         )}
       />
       {errors.age && <Text style={styles.error}>{errors.age.message}</Text>}
-
-      <Controller
-        control={control}
-        name="gender"
-        render={({ field: { onChange, onBlur, value } }) => (
-          <TextInput
-            style={styles.input}
-            placeholder="Género"
-            value={value}
-            onBlur={onBlur}
-            onChangeText={onChange}
-          />
-        )}
-      />
-      {errors.gender && (
-        <Text style={styles.error}>{errors.gender.message}</Text>
-      )}
 
       <Controller
         control={control}

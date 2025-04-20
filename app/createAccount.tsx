@@ -1,6 +1,6 @@
 import { Button, Text, View } from "react-native";
 import { useRouter } from "expo-router";
-import UserForm from "@/components/sign-upForm";
+import RegisterForm from "@/components/sign-upForm";
 
 export default function CreateAccount() {
   const router = useRouter();
@@ -17,13 +17,7 @@ export default function CreateAccount() {
       }}
     >
       <View className="w-full">
-      <UserForm />
-      </View>
-      <View>
-        <Button
-          title="boton antiguo"
-          onPress={() => router.navigate("/")}
-        />
+      <RegisterForm />
       </View>
     </View>
   );

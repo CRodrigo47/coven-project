@@ -1,4 +1,3 @@
-import { useAuth } from "@/constants/getUser";
 import { supabase } from "@/lib/supabase";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useEffect, useState } from "react";
@@ -13,7 +12,7 @@ import {
   View,
 } from "react-native";
 import * as yup from "yup";
-import ImagePickerComponent from "./imagePicker";
+import ImagePickerComponent from "../imagePicker";
 
 const covenSchema = yup.object({
   name: yup.string().required("El nombre del Coven es obligatorio"),
@@ -113,27 +112,27 @@ export default function CreateCovenForm() {
 
   const onSubmit: SubmitHandler<CovenFormData> = async (formData) => {
     try {
-      if (!userId) {
-        throw new Error("No se pudo obtener el ID del usuario");
-      }
+      // if (!userId) {
+      //   throw new Error("No se pudo obtener el ID del usuario");
+      // }
 
-      let finalImageUrl = formData.coven_icon;
+      // let finalImageUrl = formData.coven_icon;
 
-      if (formData.coven_icon && !formData.coven_icon.startsWith('http')) {
-        try {
-          finalImageUrl = await uploadImage(formData.coven_icon);
-        } catch (uploadError) {
-          Alert.alert(
-            'Error al subir imagen',
-            'No se pudo subir la imagen de perfil. Por favor, inténtalo de nuevo'
-          );
-          return;
-        }
-      }
+      // if (formData.coven_icon && !formData.coven_icon.startsWith('http')) {
+      //   try {
+      //     finalImageUrl = await uploadImage(formData.coven_icon);
+      //   } catch (uploadError) {
+      //     Alert.alert(
+      //       'Error al subir imagen',
+      //       'No se pudo subir la imagen de perfil. Por favor, inténtalo de nuevo'
+      //     );
+      //     return;
+      //   }
+      // }
 
       const covenData = {
         ...formData,
-        coven_icon: finalImageUrl,
+        // coven_icon: finalImageUrl,
         created_at: new Date().toISOString(),
         created_by: userId, // Usamos directamente el UUID del usuario
         is_public: isEnabled

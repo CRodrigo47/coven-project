@@ -1,11 +1,13 @@
 {
-    "build": {
+  "build": {
+    "production": {
       "android": {
-        "distribution": "store"
-      },
-      "ios": {
-        "distribution": "store"
+        "buildType": "apk"
       }
+    },
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
     }
   }
-  
+}

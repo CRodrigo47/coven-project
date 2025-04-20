@@ -1,6 +1,5 @@
 import { GuestWithUserIcon } from "@/app/interfaces/guestInterface";
 import GuestItem from "@/components/GatheringComponents/GuestItem";
-import InviteGatheringButton from "@/components/GatheringComponents/InviteGatheringButton";
 import useGlobalStore from "@/context/useStore";
 import { supabase } from "@/lib/supabase";
 import { useFocusEffect } from "expo-router";
@@ -51,29 +50,26 @@ export default function GatheringDetail() {
   );
 
   return (
-    <>
-      <View className="h-full" style={{ backgroundColor: "#fcf5d7" }}>
-        <View className="border-b h-36">
-          <Text>Página de detalle de un Gathering</Text>
-          <Text>
-            Gathering global: {selectedGathering?.name || "No seleccionado"}
-          </Text>
+    <View className="h-full" style={{ backgroundColor: "#fcf5d7" }}>
+      <View className="border-b h-36">
+        <Text>Página de detalle de un Gathering</Text>
+        <Text>
+          Gathering global: {selectedGathering?.name || "No seleccionado"}
+        </Text>
+      </View>
+      <View className="h-full">
+        <View className="h-10 border-b">
+          <Text className="text-center">Guest List</Text>
         </View>
-        <View className="h-full">
-          <View className="h-10 border-b">
-            <Text className="text-center">Guest List</Text>
-          </View>
-          <View>
-            <FlatList
-              data={guestList}
-              renderItem={({ item }) => <GuestItem item={item} />}
-              keyExtractor={(item) => item.user_id}
-              ListEmptyComponent={<Text>No hay invitados aún</Text>}
-            />
-          </View>
+        <View>
+          <FlatList
+            data={guestList}
+            renderItem={({ item }) => <GuestItem item={item} />}
+            keyExtractor={(item) => item.user_id}
+            ListEmptyComponent={<Text>No hay invitados aún</Text>}
+          />
         </View>
       </View>
-      <InviteGatheringButton />
-    </>
+    </View>
   );
 }

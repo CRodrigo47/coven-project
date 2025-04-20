@@ -1,4 +1,5 @@
-import CreateCovenForm from "@/components/createCovenForm";
+
+import CreateCovenForm from "@/components/CovenComponents/createCovenForm";
 import { View } from "react-native";
 
 

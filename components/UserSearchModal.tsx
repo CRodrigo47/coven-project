@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   searchBox: {
-    backgroundColor: 'white',
+    backgroundColor: '#fcf5d7',
     borderRadius: 12,
     padding: 16,
   },
@@ -192,6 +192,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
     borderRadius: 8,
     marginRight: 8,
+    borderWidth: 1
   },
   closeButton: {
     padding: 8,

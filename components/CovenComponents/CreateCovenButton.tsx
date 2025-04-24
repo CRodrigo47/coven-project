@@ -1,3 +1,5 @@
+import { COLORS } from "@/constants/COLORS";
+import { getTypography } from "@/constants/TYPOGRAPHY";
 import { useRouter } from "expo-router";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
@@ -8,7 +10,7 @@ export default function CreateCovenButton() {
         <View style={styles.container}>
             <TouchableOpacity onPress={() => router.navigate("/mainTabs/covenTabs/createCoven")}>
                 <View style={styles.buttonBox}>
-                    <Text className="text-center p-2">Create Coven</Text>
+                    <Text className="text-center p-2" style={getTypography("labelLarge", "light")}>Create Coven</Text>
                 </View>
             </TouchableOpacity>
         </View>
@@ -26,6 +28,6 @@ const styles = StyleSheet.create({
     buttonBox: {
         borderWidth: 1,
         borderRadius: 15,
-        backgroundColor: "#FFDF5F",
+        backgroundColor: COLORS.secondary,
     },
 });

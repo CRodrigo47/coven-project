@@ -1,65 +1,68 @@
 import { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import CovenInterface from '@/app/interfaces/covenInterface';
 import useGlobalStore from '@/context/useStore';
+import { COLORS } from '@/constants/COLORS';
+import { getTypography } from '@/constants/TYPOGRAPHY';
 
 export default function CovenItem({ item }: { item: CovenInterface }) {
     const router = useRouter();
     const setSelectedCoven = useGlobalStore((state: any) => state.setSelectedCoven);
-    const [membersCount, setMembersCount] = useState(0);
+    const [membersCount, setMembersCount] = useState<number | null>(null);
     const [nextGathering, setNextGathering] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
 
-    const fetchMembersCount = useCallback(async () => {
+    const fetchData = useCallback(async () => {
+        setIsLoading(true);
         try {
-            const { count, error } = await supabase
-                .from('_Members_')
-                .select('*', { count: 'exact', head: true })
-                .eq('coven_id', item.id);
+            // Ejecutar ambas consultas en paralelo
+            const [membersResult, gatheringResult] = await Promise.all([
+                supabase
+                    .from('_Members_')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('coven_id', item.id),
+                
+                supabase
+                    .from('Gathering')
+                    .select('date, time, name')
+                    .eq('coven_id', item.id)
+                    .gte('date', new Date().toISOString().split('T')[0])
+                    .order('date', { ascending: true })
+                    .order('time', { ascending: true })
+                    .limit(1)
+            ]);
 
-            if (error) throw error;
-            setMembersCount(count || 0);
-        } catch (error) {
-            console.error('Error fetching members count:', error);
-            setMembersCount(0);
-        }
-    }, [item.id]);
+            // Procesar miembros
+            if (membersResult.error) throw membersResult.error;
+            setMembersCount(membersResult.count || 0);
 
-    const fetchNextGathering = useCallback(async () => {
-        try {
-            const today = new Date().toISOString().split('T')[0];
-            
-            const { data, error } = await supabase
-                .from('Gathering')
-                .select('date, time, name')
-                .eq('coven_id', item.id)
-                .gte('date', today)
-                .order('date', { ascending: true })
-                .order('time', { ascending: true })
-                .limit(1);
-
-            if (error) throw error;
-
-            if (data && data.length > 0) {
-                const gathering = data[0];
+            // Procesar gathering
+            if (gatheringResult.error) throw gatheringResult.error;
+            if (gatheringResult.data && gatheringResult.data.length > 0) {
+                const gathering = gatheringResult.data[0];
                 const formattedDate = new Date(gathering.date).toLocaleDateString();
                 setNextGathering(`${formattedDate} ${gathering.time.substring(0,5)}`);
             } else {
                 setNextGathering(null);
             }
         } catch (error) {
-            console.error('Error fetching next gathering:', error);
+            console.error('Error fetching data:', error);
+            setMembersCount(0);
             setNextGathering(null);
+        } finally {
+            setIsLoading(false);
         }
     }, [item.id]);
+
     useFocusEffect(
         useCallback(() => {
-            fetchMembersCount();
-            fetchNextGathering();
+            fetchData();
             return () => {
+                // Cleanup if needed
             };
-        }, [fetchMembersCount, fetchNextGathering])
+        }, [fetchData])
     );
 
     const moveToDetail = () => {
@@ -70,15 +73,21 @@ export default function CovenItem({ item }: { item: CovenInterface }) {
     return (
         <TouchableOpacity onPress={moveToDetail}>
             <View style={styles.covenInfo}>
-                <View className="w-1/2 ps-4">
-                    <Text>{item.name}</Text>
+                <View className="ps-4">
+                    <Text style={getTypography("bodyLarge", "light")}>{item.name}</Text>
                 </View>
-                <View className="w-1/2 pe-4 py-2" style={styles.rightSection}>
-                    <Text className="text-center">{membersCount} members</Text>
-                    {nextGathering ? (
-                        <Text>{nextGathering}</Text>
+                <View className="pe-4 py-2" style={styles.rightSection}>
+                    {isLoading ? (
+                        <ActivityIndicator size="small" color={COLORS.primary} />
                     ) : (
-                        <Text>No upcoming gatherings</Text>
+                        <>
+                            <Text className="text-center">{membersCount} members</Text>
+                            {nextGathering ? (
+                                <Text>{nextGathering}</Text>
+                            ) : (
+                                <Text>No upcoming gatherings</Text>
+                            )}
+                        </>
                     )}
                 </View>
             </View>
@@ -91,7 +100,14 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
-        borderBottomWidth: 1
+        borderWidth: 1,
+        borderRadius: 10,
+        borderColor: COLORS.primaryDark,
+        backgroundColor: COLORS.secondary,
+        height: 60,
+        marginBlock: 2,
+        width: "90%",
+        alignSelf: "center",
     },
     rightSection: {
         alignItems: "flex-end",

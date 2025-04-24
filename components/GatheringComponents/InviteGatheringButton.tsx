@@ -1,3 +1,4 @@
+import { COLORS } from "@/constants/COLORS";
 import { useRouter } from "expo-router";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
@@ -20,6 +21,6 @@ const styles = StyleSheet.create({
         right: 15,
         borderWidth: 1,
         borderRadius: 15,
-        backgroundColor: "#FFDF5F"
+        backgroundColor: COLORS.secondary
     }
 })

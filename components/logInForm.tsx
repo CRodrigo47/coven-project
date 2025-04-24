@@ -2,16 +2,16 @@ import React, { useState } from "react";
 import {
   View,
   TextInput,
-  Button,
   Text,
   StyleSheet,
   Alert,
   ActivityIndicator,
   Pressable,
-  Keyboard,
 } from "react-native";
 import { supabase } from "../lib/supabase";
 import { useRouter } from "expo-router";
+import { getTypography } from "@/constants/TYPOGRAPHY";
+import { COLORS } from "@/constants/COLORS";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
@@ -47,22 +47,22 @@ export default function LoginForm() {
   const handlePasswordReset = async () => {
     if (!email) {
       Alert.alert(
-        "Ingresa tu email",
-        "Necesitamos tu email para enviar el enlace de recuperación"
+        "Enter your email",
+        "We need your email to send the recovery link"
       );
       return;
     }
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: "http://localhost:8081/", // Para deep linking
+        redirectTo: "http://localhost:8081/",
       });
 
       if (error) throw error;
 
       Alert.alert(
-        "Enlace enviado",
-        "Te hemos enviado un enlace para restablecer tu contraseña a tu correo electrónico."
+        "Link sent",
+        "We've sent a password reset link to your email"
       );
     } catch (error) {
       Alert.alert("Error", error.message);
@@ -70,35 +70,34 @@ export default function LoginForm() {
   };
 
   return (
-    <View className="pt-20 w-64">
+    <View style={styles.formContainer}>
       <TextInput
         style={styles.input}
         placeholder="Email"
+        placeholderTextColor="#999"
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
         keyboardType="email-address"
-        className="mb-4"
       />
       <TextInput
-        style={styles.input}
-        placeholder="Contraseña"
+        style={[styles.input, {marginBottom: 2}]}
+        placeholder="Password"
+        placeholderTextColor="#999"
         value={password}
         onChangeText={setPassword}
         secureTextEntry
       />
 
       {loading ? (
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={COLORS.primary} style={styles.loader} />
       ) : (
         <>
-        <Pressable onPress={handlePasswordReset}>
-            <Text className="text-center pb-2" style={{color: "#6E4894"}}>
-              ¿Olvidaste tu contraseña?
-            </Text>
+          <Pressable onPress={handlePasswordReset} style={styles.forgotPassword}>
+            <Text style={styles.forgotPasswordText}>Forgot your password?</Text>
           </Pressable>
-          <Pressable onPress={handleLogin}>
-            <Text className="text-center border mt-2 py-2 rounded-l color-white" style={{backgroundColor: "#6E4894"}}>Iniciar sesion</Text>
+          <Pressable onPress={handleLogin} style={styles.loginButton}>
+            <Text style={styles.loginButtonText}>Log In</Text>
           </Pressable>
         </>
       )}
@@ -107,11 +106,40 @@ export default function LoginForm() {
 }
 
 const styles = StyleSheet.create({
+  formContainer: {
+    width: 256,
+    paddingBottom: 20,
+  },
   input: {
-    height: 40,
-    borderColor: "gray",
+    height: 44,
+    borderColor: "#ddd",
     borderWidth: 1,
-    paddingHorizontal: 10,
-    borderRadius: 5,
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    marginBottom: 16,
+    backgroundColor: "#fff",
+    ...getTypography("bodyMedium", "light"),
+  },
+  forgotPassword: {
+    paddingVertical: 10,
+  },
+  forgotPasswordText: {
+    color: COLORS.primary,
+    textAlign: "center",
+    ...getTypography("bodyMedium", "light"),
+  },
+  loginButton: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 6,
+    paddingVertical: 12,
+    marginTop: 8,
+  },
+  loginButtonText: {
+    color: "#fff",
+    textAlign: "center",
+    ...getTypography("bodyMedium", "dark"),
+  },
+  loader: {
+    marginVertical: 24,
   },
 });

@@ -3,9 +3,11 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/providers/AuthProvider";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { FlatList } from "react-native";
+import { ActivityIndicator, FlatList, Text, View } from "react-native";
 import CovenItem from "./CovenItem";
 import CreateCovenButton from "./CreateCovenButton";
+import { getTypography } from "@/constants/TYPOGRAPHY";
+import { COLORS } from "@/constants/COLORS";
 
 const fetchUserCoven = async (
   userId: string | undefined
@@ -29,26 +31,54 @@ const fetchUserCoven = async (
 
 export default function CovenList() {
   const [allCoven, setAllCoven] = useState<CovenInterface[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const { session } = useAuth();
 
   useFocusEffect(
     useCallback(() => {
       const fetchCovens = async () => {
+        setIsLoading(true);
         const userCoven = await fetchUserCoven(session?.user.id);
         setAllCoven(userCoven);
+        setIsLoading(false);
       };
       fetchCovens();
     }, [session?.user.id])
   );
 
+  if (isLoading) {
+    return (
+      <View className="flex-1 justify-center items-center">
+        <ActivityIndicator size="large" color={COLORS.primary} />
+      </View>
+    );
+  }
+
+  if (allCoven[0]) {
+    return (
+      <>
+        <FlatList
+        style={{marginTop: 10}}
+          data={allCoven}
+          renderItem={({ item }) => <CovenItem item={item} />}
+          keyExtractor={(item) => item.id.toString()}
+        />
+        <CreateCovenButton />
+      </>
+    );
+  }
+
   return (
     <>
-      <FlatList
-        data={allCoven}
-        renderItem={({ item }) => <CovenItem item={item} />}
-        keyExtractor={(item) => item.id.toString()}
-      />
-      <CreateCovenButton/>
+      <View
+        style={{ justifyContent: "center", alignItems: "center" }}
+        className="h-full"
+      >
+        <Text style={getTypography("titleLarge", "light")}>
+          You are not in any Coven
+        </Text>
+      </View>
+      <CreateCovenButton />
     </>
   );
 }

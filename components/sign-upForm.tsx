@@ -13,37 +13,38 @@ import { useForm, Controller } from "react-hook-form";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { supabase } from "../lib/supabase";
-import ImagePickerComponent from "./imagePicker";
+import { FONTS } from "@/constants/FONTS";
+import { COLORS } from "@/constants/COLORS";
 
 const registerSchema = yup.object({
   email: yup
     .string()
-    .email("El email no es válido")
-    .required("El email es obligatorio"),
+    .email("Email is not valid")
+    .required("Email is required"),
   password: yup
     .string()
-    .min(8, "La contraseña debe tener al menos 8 caracteres")
-    .required("La contraseña es obligatoria"),
-  name: yup.string().required("El nombre es obligatorio"),
-  last_name: yup.string().required("El apellido es obligatorio"),
+    .min(8, "Password must be at least 8 characters")
+    .required("Password is required"),
+  name: yup.string().required("Name is required"),
+  last_name: yup.string().required("Last name is required"),
   user_name: yup
     .string()
-    .required("El nombre de usuario es obligatorio")
-    .min(3, "Mínimo 3 caracteres"),
+    .required("Username is required")
+    .min(3, "Minimum 3 characters"),
   user_icon: yup.string().nullable().default(null),
   phone_number: yup
     .string()
-    .matches(/^[0-9]+$/, "Solo números")
-    .min(8, "Mínimo 8 dígitos")
+    .matches(/^[0-9]+$/, "Numbers only")
+    .min(8, "Minimum 8 digits")
     .default(""),
   age: yup
     .number()
     .transform((value) => (isNaN(value) ? null : value))
     .nullable()
-    .required("La edad es obligatoria")
-    .min(13, "Mínimo 13 años")
-    .max(120, "Edad máxima 120 años"),
-  interests: yup.array().of(yup.string()).nullable().default([]),
+    .required("Age is required")
+    .min(13, "Minimum 13 years")
+    .max(120, "Maximum 120 years"),
+  interests: yup.string().nullable().default(""),
 });
 
 type RegisterFormData = yup.InferType<typeof registerSchema>;
@@ -52,11 +53,12 @@ export default function RegisterForm() {
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  const [interestsText, setInterestsText] = useState("");
 
   const {
     control,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isSubmitting },
     setValue,
   } = useForm<RegisterFormData>({
     resolver: yupResolver(registerSchema),
@@ -69,34 +71,27 @@ export default function RegisterForm() {
       user_icon: null,
       phone_number: "",
       age: 0,
-      interests: [],
+      interests: "",
     },
   });
 
-  //LA URI PARECE QUE ESTA PILLANDO LA URL QUE SUBE, NO LA DEL STORAGE, Y CREO QUE NECESITA LA DEL STORAGE.
-
   const uploadImage = async (uri: string, userId: string) => {
     try {
-      // 1. Obtener el blob de la imagen
       let blob;
       if (uri.startsWith('file://') || uri.startsWith('content://')) {
-        // Para URIs de archivos locales (React Native)
         const response = await fetch(uri);
         blob = await response.blob();
       } else if (uri.startsWith('data:')) {
-        // Para base64
         const response = await fetch(uri);
         blob = await response.blob();
       } else {
-        throw new Error('Formato de imagen no soportado');
+        throw new Error('Unsupported image format');
       }
   
-      // 2. Determinar extensión del archivo
       const fileExt = uri.split('.').pop()?.toLowerCase() || 'jpg';
       const fileName = `user_avatars/${userId}/avatar.${fileExt}`;
       const mimeType = `image/${fileExt === 'png' ? 'png' : 'jpeg'}`;
   
-      // 3. Subir a Supabase Storage
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(fileName, blob, {
@@ -107,14 +102,12 @@ export default function RegisterForm() {
   
       if (uploadError) throw uploadError;
   
-      // 4. Obtener URL pública
       const { data: { publicUrl } } = supabase.storage
         .from('avatars')
         .getPublicUrl(fileName);
   
-      if (!publicUrl) throw new Error('No se pudo obtener URL pública');
+      if (!publicUrl) throw new Error('Could not get public URL');
   
-      // 5. Actualizar usuario con la nueva URL
       const { error: updateError } = await supabase
         .from('User')
         .update({ user_icon: publicUrl })
@@ -124,7 +117,7 @@ export default function RegisterForm() {
   
       return publicUrl;
     } catch (error) {
-      console.log('Error en uploadImage:', error);
+      console.log('Image upload error:', error);
       throw error;
     }
   };
@@ -137,18 +130,15 @@ export default function RegisterForm() {
   };
 
   const handleInterestsChange = (text: string) => {
-    const interestsArray = text
-      .split(",")
-      .map((item) => item.trim())
-      .filter((item) => item !== "");
-    setValue("interests", interestsArray, { shouldValidate: true });
+    setInterestsText(text);
+    setValue("interests", text, { shouldValidate: true });
   };
 
   const handleRegister = async (formData: RegisterFormData) => {
     try {
       setLoading(true);
       
-      // 1. Verificar unicidad del nombre de usuario
+      // Comprobar si el nombre de usuario ya existe
       const { data: usernameCheck } = await supabase
         .from('User')
         .select('user_name')
@@ -156,10 +146,10 @@ export default function RegisterForm() {
         .maybeSingle();
   
       if (usernameCheck) {
-        throw new Error('Este nombre de usuario ya está en uso');
+        throw new Error('Username already in use');
       }
   
-      // 2. Registrar en auth.users
+      // Registrar el usuario en Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -179,61 +169,38 @@ export default function RegisterForm() {
         throw authError;
       }
   
-      if (!authData.user) throw new Error('No se pudo crear el usuario');
-  
-      // 3. Esperar 2 segundos para que la sesión se establezca
-      await new Promise(resolve => setTimeout(resolve, 2000));
-  
-      // 4. Verificar si tenemos sesión
-      const { data: { session } } = await supabase.auth.getSession();
+      if (!authData.user) throw new Error('Failed to create user');
       
-      if (!session) {
-        console.warn("Sesión no disponible aún, pero continuamos el proceso");
-        // No lanzamos error aquí, continuamos igual
-      }
-
-      let userIconUrl = null;
-      if (imageUri && authData.user.id) {
-        try {
-          userIconUrl = await uploadImage(imageUri, authData.user.id);
-        } catch (uploadError) {
-          // console.warn("Error subiendo imagen:", uploadError);                     //COMENTADO POR PROBLEMAS EN ANDROID
-          // Continuamos sin imagen si falla
-        }
-      }
-  
-      // 5. Crear registro en la tabla User
+      // CAMBIO IMPORTANTE: Insertar el registro en la tabla User inmediatamente después del registro
+      // sin esperar por la sesión
       const { error: userError } = await supabase
         .from('User')
-        .upsert({
+        .insert({
           id: authData.user.id,
           email: formData.email,
           name: formData.name,
           last_name: formData.last_name,
           user_name: formData.user_name,
-          user_icon: userIconUrl,
+          user_icon: null, // Dejamos la imagen como null por ahora
           phone_number: formData.phone_number,
           age: formData.age,
-          interests: formData.interests,
+          interests: formData.interests ? formData.interests.split(',').map(i => i.trim()) : [],
         });
+      
+      if (userError) {
+        console.error('Error creating user record:', userError);
+        throw new Error(`Failed to create user record: ${userError.message}`);
+      }
   
-      // if (userError) {
-      //   console.error("Error al crear usuario en tabla User:", userError);                                     //COMENTADO POR PROBLEMAS EN ANDROID
-      //   // No lanzamos error aquí para no interrumpir el flujo de verificación
-      // }
-  
-  
+      // El correo ya se ha enviado automáticamente por Supabase Auth
       setEmailSent(true);
       
     } catch (error) {
-      console.error('Error completo:', error);
-      // Mostramos error solo si no es el flujo normal de verificación
-      if (!error.message.includes('Email not confirmed')) {
-        Alert.alert(
-          'Error',
-          error instanceof Error ? error.message : 'Error desconocido al registrar'
-        );
-      }
+      console.error('Error:', error);
+      Alert.alert(
+        'Error',
+        error instanceof Error ? error.message : 'Registration error'
+      );
     } finally {
       setLoading(false);
     }
@@ -241,16 +208,14 @@ export default function RegisterForm() {
   
   const handleExistingUser = async (formData: RegisterFormData) => {
     try {
-      // 1. Intentar autenticar
       const { data: { user }, error: signInError } = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: formData.password
       });
   
       if (signInError) throw signInError;
-      if (!user) throw new Error('Usuario no encontrado');
+      if (!user) throw new Error('User not found');
   
-      // 2. Actualizar datos del usuario
       const updates = {
         name: formData.name,
         last_name: formData.last_name,
@@ -258,225 +223,265 @@ export default function RegisterForm() {
         user_icon: formData.user_icon,
         phone_number: formData.phone_number,
         age: formData.age,
-        interests: formData.interests,
+        interests: formData.interests ? formData.interests.split(',').map(i => i.trim()) : [],
         updated_at: new Date().toISOString()
       };
   
-      // 3. Subir imagen si existe
       if (imageUri) {
         try {
           updates.user_icon = await uploadImage(imageUri, user.id);
         } catch (uploadError) {
-          console.warn("No se pudo subir la imagen:", uploadError);
+          console.warn("Image upload failed:", uploadError);
         }
       }
   
-      // 4. Aplicar actualizaciones
       const { error: updateError } = await supabase
         .from('User')
         .update(updates)
         .eq('id', user.id);
   
       if (updateError) throw updateError;
-
       
     } catch (error) {
-      throw new Error(error instanceof Error ? error.message : 'Error al actualizar usuario existente');
+      throw new Error(error instanceof Error ? error.message : 'Error updating user');
     }
   };
 
   if (emailSent) {
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>Verifica tu email</Text>
+        <Text style={styles.title}>Verify your email</Text>
         <Text style={styles.message}>
-          Hemos enviado un enlace de confirmación a tu correo electrónico. Por
-          favor revisa tu bandeja de entrada y haz clic en el enlace para
-          activar tu cuenta.
+          We've sent a confirmation link to your email address.
+          Please check your inbox and click the link to activate your account.
         </Text>
       </View>
     );
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <ImagePickerComponent
-        onImageSelected={setImageUri}
-        uploadToSupabase={false}
-      />
-
-      <Controller
-        control={control}
-        name="email"
-        render={({ field: { onChange, onBlur, value } }) => (
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            autoCapitalize="none"
-            keyboardType="email-address"
-            value={value}
-            onBlur={onBlur}
-            onChangeText={onChange}
-          />
-        )}
-      />
-      {errors.email && <Text style={styles.error}>{errors.email.message}</Text>}
-
-      <Controller
-        control={control}
-        name="password"
-        render={({ field: { onChange, onBlur, value } }) => (
-          <TextInput
-            style={styles.input}
-            placeholder="Contraseña"
-            secureTextEntry
-            value={value}
-            onBlur={onBlur}
-            onChangeText={onChange}
-          />
-        )}
-      />
-      {errors.password && (
-        <Text style={styles.error}>{errors.password.message}</Text>
-      )}
-
-      <Controller
-        control={control}
-        name="name"
-        render={({ field: { onChange, onBlur, value } }) => (
-          <TextInput
-            style={styles.input}
-            placeholder="Nombre"
-            value={value}
-            onBlur={onBlur}
-            onChangeText={onChange}
-          />
-        )}
-      />
-      {errors.name && <Text style={styles.error}>{errors.name.message}</Text>}
-
-      <Controller
-        control={control}
-        name="last_name"
-        render={({ field: { onChange, onBlur, value } }) => (
-          <TextInput
-            style={styles.input}
-            placeholder="Apellido"
-            value={value}
-            onBlur={onBlur}
-            onChangeText={onChange}
-          />
-        )}
-      />
-      {errors.last_name && (
-        <Text style={styles.error}>{errors.last_name.message}</Text>
-      )}
-
-      <Controller
-        control={control}
-        name="user_name"
-        render={({ field: { onChange, onBlur, value } }) => (
-          <TextInput
-            style={styles.input}
-            placeholder="Nombre de usuario"
-            autoCapitalize="none"
-            value={value}
-            onBlur={onBlur}
-            onChangeText={onChange}
-          />
-        )}
-      />
-      {errors.user_name && (
-        <Text style={styles.error}>{errors.user_name.message}</Text>
-      )}
-
-      <Controller
-        control={control}
-        name="phone_number"
-        render={({ field: { onChange, onBlur, value } }) => (
-          <TextInput
-            style={styles.input}
-            placeholder="Teléfono"
-            keyboardType="phone-pad"
-            value={value}
-            onBlur={onBlur}
-            onChangeText={onChange}
-          />
-        )}
-      />
-      {errors.phone_number && (
-        <Text style={styles.error}>{errors.phone_number.message}</Text>
-      )}
-
-      <Controller
-        control={control}
-        name="age"
-        render={({ field: { value, onBlur } }) => (
-          <TextInput
-            style={styles.input}
-            placeholder="Edad"
-            keyboardType="numeric"
-            value={value ? String(value) : ""}
-            onBlur={onBlur}
-            onChangeText={handleAgeChange}
-          />
-        )}
-      />
-      {errors.age && <Text style={styles.error}>{errors.age.message}</Text>}
-
-      <Controller
-        control={control}
-        name="interests"
-        render={({ field: { value } }) => (
-          <TextInput
-            style={styles.input}
-            placeholder="Intereses (separados por comas)"
-            value={value ? value.join(", ") : ""}
-            onChangeText={handleInterestsChange}
-          />
-        )}
-      />
-
-      {loading ? (
-        <ActivityIndicator size="large" style={styles.loader} />
-      ) : (
-        <Button
-          title="Registrarse"
-          onPress={handleSubmit(handleRegister)}
-          disabled={loading}
+    <ScrollView 
+      contentContainerStyle={styles.container}
+      keyboardShouldPersistTaps="handled"
+    >
+      <View style={styles.inputGroup}>
+        <Text style={styles.label}>Email*</Text>
+        <Controller
+          control={control}
+          name="email"
+          render={({ field: { onChange, onBlur, value } }) => (
+            <TextInput
+              style={styles.input}
+              placeholder="your@email.com"
+              autoCapitalize="none"
+              keyboardType="email-address"
+              value={value}
+              onBlur={onBlur}
+              onChangeText={onChange}
+            />
+          )}
         />
-      )}
+        {errors.email && <Text style={styles.errorText}>{errors.email.message}</Text>}
+      </View>
+
+      <View style={styles.inputGroup}>
+        <Text style={styles.label}>Password*</Text>
+        <Controller
+          control={control}
+          name="password"
+          render={({ field: { onChange, onBlur, value } }) => (
+            <TextInput
+              style={styles.input}
+              placeholder="Minimum 8 characters"
+              secureTextEntry
+              value={value}
+              onBlur={onBlur}
+              onChangeText={onChange}
+            />
+          )}
+        />
+        {errors.password && <Text style={styles.errorText}>{errors.password.message}</Text>}
+      </View>
+
+      <View style={styles.inputGroup}>
+        <Text style={styles.label}>Name*</Text>
+        <Controller
+          control={control}
+          name="name"
+          render={({ field: { onChange, onBlur, value } }) => (
+            <TextInput
+              style={styles.input}
+              placeholder="Your name"
+              value={value}
+              onBlur={onBlur}
+              onChangeText={onChange}
+            />
+          )}
+        />
+        {errors.name && <Text style={styles.errorText}>{errors.name.message}</Text>}
+      </View>
+
+      <View style={styles.inputGroup}>
+        <Text style={styles.label}>Last name*</Text>
+        <Controller
+          control={control}
+          name="last_name"
+          render={({ field: { onChange, onBlur, value } }) => (
+            <TextInput
+              style={styles.input}
+              placeholder="Your last name"
+              value={value}
+              onBlur={onBlur}
+              onChangeText={onChange}
+            />
+          )}
+        />
+        {errors.last_name && <Text style={styles.errorText}>{errors.last_name.message}</Text>}
+      </View>
+
+      <View style={styles.inputGroup}>
+        <Text style={styles.label}>Username*</Text>
+        <Controller
+          control={control}
+          name="user_name"
+          render={({ field: { onChange, onBlur, value } }) => (
+            <TextInput
+              style={styles.input}
+              placeholder="Minimum 3 characters"
+              autoCapitalize="none"
+              value={value}
+              onBlur={onBlur}
+              onChangeText={onChange}
+            />
+          )}
+        />
+        {errors.user_name && <Text style={styles.errorText}>{errors.user_name.message}</Text>}
+      </View>
+
+      <View style={styles.inputGroup}>
+        <Text style={styles.label}>Phone</Text>
+        <Controller
+          control={control}
+          name="phone_number"
+          render={({ field: { onChange, onBlur, value } }) => (
+            <TextInput
+              style={styles.input}
+              placeholder="Optional"
+              keyboardType="phone-pad"
+              value={value}
+              onBlur={onBlur}
+              onChangeText={onChange}
+            />
+          )}
+        />
+        {errors.phone_number && <Text style={styles.errorText}>{errors.phone_number.message}</Text>}
+      </View>
+
+      <View style={styles.inputGroup}>
+        <Text style={styles.label}>Age*</Text>
+        <Controller
+          control={control}
+          name="age"
+          render={({ field: { value, onBlur } }) => (
+            <TextInput
+              style={styles.input}
+              placeholder="Minimum 13 years"
+              keyboardType="numeric"
+              value={value ? String(value) : ""}
+              onBlur={onBlur}
+              onChangeText={handleAgeChange}
+            />
+          )}
+        />
+        {errors.age && <Text style={styles.errorText}>{errors.age.message}</Text>}
+      </View>
+
+      <View style={styles.inputGroup}>
+  <Text style={styles.label}>Interests</Text>
+  <Controller
+    control={control}
+    name="interests"
+    render={({ field: { onBlur } }) => (
+      <TextInput
+        style={[styles.input, styles.multilineInput]}
+        placeholder="Separate with commas (e.g. reading, sports, music)"
+        value={interestsText}
+        onBlur={onBlur}
+        onChangeText={handleInterestsChange}
+        multiline
+        textAlignVertical="top"
+      />
+    )}
+  />
+</View>
+
+      <View style={styles.submitButton}>
+        {loading ? (
+          <ActivityIndicator size="small" color={COLORS.primary} />
+        ) : (
+          <Button
+            title={isSubmitting ? "Registering..." : "Register"}
+            onPress={handleSubmit(handleRegister)}
+            disabled={isSubmitting}
+            color={COLORS.primary}
+          />
+        )}
+      </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
+    padding: 15,
+    paddingBottom: 30,
+  },
+  inputGroup: {
+    marginBottom: 12,
+  },
+  label: {
+    marginBottom: 4,
+    fontSize: 14,
+    color: '#444',
+    fontFamily: FONTS.medium
   },
   input: {
-    height: 40,
-    borderColor: "gray",
     borderWidth: 1,
-    marginBottom: 10,
-    paddingHorizontal: 10,
-    borderRadius: 5,
+    borderColor: '#ddd',
+    borderRadius: 6,
+    padding: 10,
+    fontSize: 14,
+    backgroundColor: '#fff',
+    fontFamily: FONTS.medium,
+    height: 40,
   },
-  error: {
-    color: "red",
-    marginBottom: 10,
+  errorText: {
+    color: '#dc2626',
+    marginTop: 4,
+    fontSize: 12,
+    fontFamily: FONTS.medium
+  },
+  submitButton: {
+    marginTop: 15,
+    borderRadius: 6,
+    overflow: 'hidden',
   },
   title: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "bold",
-    marginBottom: 20,
+    marginBottom: 15,
     textAlign: "center",
+    fontFamily: FONTS.semiBold
   },
   message: {
     textAlign: "center",
-    paddingHorizontal: 20,
+    paddingHorizontal: 15,
+    fontFamily: FONTS.medium,
+    fontSize: 14,
   },
-  loader: {
-    marginVertical: 20,
+  multilineInput: {
+    height: 80,
+    textAlignVertical: 'top',
+    paddingTop: 10
   },
 });

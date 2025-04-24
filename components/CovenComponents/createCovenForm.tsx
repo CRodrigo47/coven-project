@@ -10,9 +10,12 @@ import {
   Text,
   TextInput,
   View,
+  StyleSheet,
 } from "react-native";
 import * as yup from "yup";
 import ImagePickerComponent from "../imagePicker";
+import { COLORS } from "@/constants/COLORS";
+import { FONTS } from "@/constants/FONTS";
 
 const covenSchema = yup.object({
   name: yup.string().required("El nombre del Coven es obligatorio"),
@@ -46,7 +49,6 @@ export default function CreateCovenForm() {
     },
   });
 
-  // Obtener el ID del usuario autenticado
   useEffect(() => {
     const fetchUserId = async () => {
       try {
@@ -66,75 +68,12 @@ export default function CreateCovenForm() {
     setValue("coven_icon", imageUri);
   }, [imageUri, setValue]);
 
-  const uploadImage = async (uri: string) => {
-    try {
-      setUploading(true);
-
-      let blob;
-      try {
-        const response = await fetch(uri);
-        blob = await response.blob();
-      } catch (fetchError) {
-        console.error("Error al convertir imagen a blob: ", fetchError);
-        throw new Error("No se pudo procesar la imagen seleccionada");
-      }
-
-      const fileName =
-        "coven_icons/" +
-        (Date.now() - Math.floor(Math.random() * 1000)) +
-        ".jpg";
-
-      const { error: uploadError } = await supabase.storage
-        .from("avatars")
-        .upload(fileName, blob, {
-          contentType: "image/jpeg",
-          upsert: false,
-        });
-
-      if (uploadError) throw uploadError;
-
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("avatars").getPublicUrl(fileName);
-
-      return publicUrl;
-    } catch (error) {
-      console.error("Error uploading image: ", error);
-      throw new Error(
-        error instanceof Error
-          ? error.message
-          : "Error al subir la imagen. Verifica tu conexión."
-      );
-    } finally {
-      setUploading(false);
-    }
-  };
-
   const onSubmit: SubmitHandler<CovenFormData> = async (formData) => {
     try {
-      // if (!userId) {
-      //   throw new Error("No se pudo obtener el ID del usuario");
-      // }
-
-      // let finalImageUrl = formData.coven_icon;
-
-      // if (formData.coven_icon && !formData.coven_icon.startsWith('http')) {
-      //   try {
-      //     finalImageUrl = await uploadImage(formData.coven_icon);
-      //   } catch (uploadError) {
-      //     Alert.alert(
-      //       'Error al subir imagen',
-      //       'No se pudo subir la imagen de perfil. Por favor, inténtalo de nuevo'
-      //     );
-      //     return;
-      //   }
-      // }
-
       const covenData = {
         ...formData,
-        // coven_icon: finalImageUrl,
         created_at: new Date().toISOString(),
-        created_by: userId, // Usamos directamente el UUID del usuario
+        created_by: userId,
         is_public: isEnabled
       };
 
@@ -161,65 +100,152 @@ export default function CreateCovenForm() {
   };
 
   return (
-    <ScrollView>
-      <View>
+    <ScrollView contentContainerStyle={styles.container}>
+      {/* <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Imagen del Coven</Text>
         <ImagePickerComponent
           onImageSelected={setImageUri}
           uploadToSupabase={false}
         />
+      </View> */}
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Coven Information</Text>
+        
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Coven's name*</Text>
+          <Controller
+            control={control}
+            name="name"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <TextInput
+                style={styles.input}
+                onBlur={onBlur}
+                onChangeText={onChange}
+                value={value}
+              />
+            )}
+          />
+          {errors.name && <Text style={styles.errorText}>{errors.name.message}</Text>}
+        </View>
+
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Description</Text>
+          <Controller
+            control={control}
+            name="description"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <TextInput
+                style={[styles.input, styles.multilineInput]}
+                onBlur={onBlur}
+                onChangeText={onChange}
+                value={value !== null ? value : ""}
+                multiline
+                numberOfLines={4}
+              />
+            )}
+          />
+          {errors.description && <Text style={styles.errorText}>{errors.description.message}</Text>}
+        </View>
       </View>
 
-      <View>
-        <Controller
-          control={control}
-          name="name"
-          render={({ field: { onChange, onBlur, value } }) => (
-            <TextInput
-              placeholder="Coven Name"
-              onBlur={onBlur}
-              onChangeText={onChange}
-              value={value}
-            />
-          )}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Privacy</Text>
+        <View style={styles.switchContainer}>
+          <Text style={styles.label}>Private / Public</Text>
+          <Controller
+            control={control}
+            name="is_public"
+            render={() => (
+              <Switch 
+                onValueChange={toggleSwitch} 
+                value={isEnabled}
+                trackColor={{ false: "#767577", true: COLORS.primaryDark }}
+                thumbColor={isEnabled ? COLORS.primary : "#f4f3f4"}
+              />
+            )}
+          />
+        </View>
+        <Text style={styles.hintText}>
+          {isEnabled 
+            ? "People can look for your Coven and ask you for an invitation." 
+            : "Only invited members will join your Coven"}
+        </Text>
+      </View>
+
+      {/* Botón de envío */}
+      <View style={styles.submitButton}>
+        <Button
+          title={isSubmitting || uploading ? "Saving..." : "Create Coven"}
+          onPress={handleSubmit(onSubmit)}
+          disabled={isSubmitting || uploading}
+          color={COLORS.primary}
         />
-        {errors.name && <Text>{errors.name.message}</Text>}
       </View>
-
-      <View>
-        <Controller
-          control={control}
-          name="description"
-          render={({ field: { onChange, onBlur, value } }) => (
-            <TextInput
-              placeholder="Description"
-              onBlur={onBlur}
-              onChangeText={onChange}
-              value={value !== null ? value : ""}
-            />
-          )}
-        />
-        {errors.description && <Text>{errors.description.message}</Text>}
-      </View>
-
-      <View>
-        <Controller
-          control={control}
-          name="is_public"
-          render={() => (
-            <>
-              <Text>Private - Public</Text>
-              <Switch onValueChange={toggleSwitch} value={isEnabled} />
-            </>
-          )}
-        />
-        {errors.name && <Text>{errors.name.message}</Text>}
-      </View>
-
-      <Button
-        title={isSubmitting || uploading ? "Guardando..." : "Crear Coven"}
-        onPress={handleSubmit(onSubmit)}
-        disabled={isSubmitting || uploading}
-      />
     </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    padding: 20,
+    paddingBottom: 40,
+  },
+  section: {
+    marginBottom: 30,
+    backgroundColor: 'transparent',
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 15,
+    color: '#333',
+    paddingBottom: 8,
+    fontFamily: FONTS.semiBold
+  },
+  inputGroup: {
+    marginBottom: 20,
+  },
+  label: {
+    marginBottom: 8,
+    fontSize: 16,
+    color: '#444',
+    fontFamily: FONTS.medium
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    backgroundColor: '#fff',
+    fontFamily: FONTS.medium
+  },
+  multilineInput: {
+    minHeight: 100,
+    textAlignVertical: 'top',
+  },
+  switchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  errorText: {
+    color: '#dc2626',
+    marginTop: 5,
+    fontSize: 14,
+    fontFamily: FONTS.medium
+  },
+  hintText: {
+    color: '#666',
+    fontSize: 14,
+    fontStyle: 'italic',
+    fontFamily: FONTS.italic
+  },
+  submitButton: {
+    marginTop: 20,
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+});

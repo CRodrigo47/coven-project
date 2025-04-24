@@ -3,6 +3,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { UserSearchModal } from "@/components/UserSearchModal";
+import { COLORS } from "@/constants/COLORS";
+import { getTypography } from "@/constants/TYPOGRAPHY";
 
 export default function MainTabsLayout() {
   const insets = useSafeAreaInsets();
@@ -10,9 +12,8 @@ export default function MainTabsLayout() {
 
   return (
     <View style={{ flex: 1 }}>
-      {/* Header fijo fuera de los Tabs */}
       <View style={{
-        position: 'absolute', // Usamos posición absoluta
+        position: 'absolute',
         top: 0,
         left: 0,
         right: 0,
@@ -22,25 +23,24 @@ export default function MainTabsLayout() {
         alignItems: "center",
         paddingHorizontal: 16,
         paddingTop: insets.top,
-        backgroundColor: "#8C5ABE",
+        backgroundColor: COLORS.primary,
         borderBottomWidth: 1,
         zIndex: 1
       }}>
-        <Text style={{ fontSize: 20, fontWeight: "bold", color: "white" }}>
+        <Text style={getTypography("titleLarge", "dark")}>
           Coven
         </Text>
         <UserSearchModal />
       </View>
       <View style={{ 
         flex: 1, 
-        paddingTop: headerHeight, // Empuja todo el contenido hacia abajo
-        backgroundColor: '#ffffff' // Color de fondo para el área de contenido
+        paddingTop: headerHeight,
+        backgroundColor: '#ffffff'
       }}>
-      {/* Tabs con espacio para el header */}
       <Tabs
           screenOptions={{
             animation: "shift",
-            headerShown: false, // Asegúrate de que el header nativo esté oculto
+            headerShown: false,
             tabBarShowLabel: false,
             tabBarStyle: {
               backgroundColor: "#8C5ABE",

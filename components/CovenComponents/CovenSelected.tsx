@@ -1,11 +1,12 @@
 import { useState, useCallback } from 'react';
-import { View, Text, FlatList } from 'react-native';
+import { View, Text, FlatList, StyleSheet } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import CovenInterface from '@/app/interfaces/covenInterface';
 import GatheringItem from '../GatheringComponents/GatheringItem';
 import GatheringInterface from '@/app/interfaces/gatheringInterface';
-import useGlobalStore from '@/context/useStore';
+import { getTypography } from '@/constants/TYPOGRAPHY';
+import { COLORS } from '@/constants/COLORS';
 
 export default function CovenSelected({ item }: { item: CovenInterface }) {
   const [nextGatherings, setNextGatherings] = useState<GatheringInterface[]>([]);
@@ -40,34 +41,52 @@ export default function CovenSelected({ item }: { item: CovenInterface }) {
   );
 
   return (
-    <View style={{ flex: 1 }}>
-      <Text style={{ fontSize: 18, fontWeight: 'bold', padding: 10, textAlign: "center", borderBottomWidth: 2 }}>
-        Próximos Gatherings
+    <View style={styles.container}>
+      <Text style={[getTypography("titleLarge", "light"), styles.sectionTitle]}>
+        Next gatherings
       </Text>
       <FlatList
         data={nextGatherings}
         renderItem={({ item }) => <GatheringItem item={item} />}
         keyExtractor={item => item.id}
         ListEmptyComponent={
-          <Text style={{ textAlign: 'center', padding: 20 }}>
-            No hay gatherings programados
+          <Text style={styles.emptyText}>
+            There are no gatherings on schedule
           </Text>
         }
       />
 
-      <Text style={{ fontSize: 18, fontWeight: 'bold', padding: 10, textAlign: "center", borderBottomWidth: 2 }}>
-        Historial
+      <Text style={[getTypography("titleLarge", "light"), styles.sectionTitle]}>
+        Gatherings History
       </Text>
       <FlatList
         data={historyGatherings}
         renderItem={({ item }) => <GatheringItem item={item} />}
         keyExtractor={item => item.id}
         ListEmptyComponent={
-          <Text style={{ textAlign: 'center', padding: 20 }}>
-            No hay gatherings anteriores
+          <Text style={[getTypography("titleLarge", "light"), styles.emptyText]}>
+            There are no previous gatherings
           </Text>
         }
       />
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  sectionTitle: {
+    padding: 10,
+    textAlign: "center",
+    borderBottomWidth: 2,
+    borderBottomColor: COLORS.primaryDark,
+    marginBottom: 5
+  },
+  emptyText: {
+    textAlign: 'center',
+    padding: 20,
+    color: 'black',
+  },
+});

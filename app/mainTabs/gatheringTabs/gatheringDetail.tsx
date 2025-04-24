@@ -1,11 +1,14 @@
 import { GuestWithUserIcon } from "@/app/interfaces/guestInterface";
 import GuestItem from "@/components/GatheringComponents/GuestItem";
-import InviteGatheringButton from "@/components/GatheringComponents/InviteGatheringButton";
 import useGlobalStore from "@/context/useStore";
 import { supabase } from "@/lib/supabase";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { FlatList, Text, View } from "react-native";
+import { FlatList, Text, View, StyleSheet, ScrollView } from "react-native";
+import { COLORS } from "@/constants/COLORS";
+import { FONTS } from "@/constants/FONTS";
+import MapView, { Marker } from "react-native-maps";
+import JoinGatheringButton from "@/components/JoinGatheringButton";
 
 const fetchGuestsWithUserIcons = async (gatheringId: string) => {
   const { data, error } = await supabase
@@ -35,45 +38,216 @@ export default function GatheringDetail() {
   );
   const [guestList, setGuestList] = useState<GuestWithUserIcon[]>([]);
 
+  // Function to refresh guest list
+  const refreshGuestList = async () => {
+    if (!selectedGathering?.id) return;
+    
+    const fetchGuestList = await fetchGuestsWithUserIcons(
+      selectedGathering.id
+    );
+    setGuestList(fetchGuestList);
+  };
+
   useFocusEffect(
     useCallback(() => {
       if (!selectedGathering?.id) return;
-
-      const fetchGuests = async () => {
-        const fetchGuestList = await fetchGuestsWithUserIcons(
-          selectedGathering.id
-        );
-        setGuestList(fetchGuestList);
-      };
-
-      fetchGuests();
+      
+      refreshGuestList();
     }, [selectedGathering?.id])
   );
 
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  };
+
+  const formatTime = (timeString: string) => {
+    return timeString.substring(0, 5);
+  };
+
+  // Check if we have valid coordinates to display the map
+  const hasValidCoordinates = 
+    selectedGathering?.latitude != null && 
+    selectedGathering?.longitude != null;
+
   return (
-    <>
-      <View className="h-full" style={{ backgroundColor: "#fcf5d7" }}>
-        <View className="border-b h-36">
-          <Text>Página de detalle de un Gathering</Text>
-          <Text>
-            Gathering global: {selectedGathering?.name || "No seleccionado"}
+    <ScrollView style={styles.container}
+    contentContainerStyle={styles.scrollContainer}>
+      <View style={styles.gatheringInfoContainer}>
+        <Text style={styles.gatheringName}>
+          {selectedGathering?.name || "No gathering selected"}
+        </Text>
+
+        <View style={styles.detailRow}>
+          <Text style={styles.detailLabel}>Location:</Text>
+          <Text style={styles.detailValue}>
+            {selectedGathering?.location_name}
           </Text>
         </View>
-        <View className="h-full">
-          <View className="h-10 border-b">
-            <Text className="text-center">Guest List</Text>
-          </View>
-          <View>
-            <FlatList
-              data={guestList}
-              renderItem={({ item }) => <GuestItem item={item} />}
-              keyExtractor={(item) => item.user_id}
-              ListEmptyComponent={<Text>No hay invitados aún</Text>}
-            />
-          </View>
+
+        <View style={styles.detailRow}>
+          <Text style={styles.detailLabel}>Date:</Text>
+          <Text style={styles.detailValue}>
+            {selectedGathering?.date
+              ? formatDate(selectedGathering.date)
+              : "Not specified"}
+          </Text>
         </View>
+
+        <View style={styles.detailRow}>
+          <Text style={styles.detailLabel}>Time:</Text>
+          <Text style={styles.detailValue}>
+            {formatTime(selectedGathering?.time) || "Not specified"}
+          </Text>
+        </View>
+
+        {selectedGathering?.transport && (
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Transport:</Text>
+            <Text style={styles.detailValue}>
+              {selectedGathering.transport}
+            </Text>
+          </View>
+        )}
+
+        {selectedGathering?.cost && (
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Cost:</Text>
+            <Text style={styles.detailValue}>{selectedGathering.cost}€</Text>
+          </View>
+        )}
+
+        {hasValidCoordinates ? (
+          <View style={styles.mapContainer}>
+            <MapView
+              style={styles.map}
+              region={{
+                latitude: selectedGathering.latitude,
+                longitude: selectedGathering.longitude,
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01,
+              }}
+              pitchEnabled={false}
+              toolbarEnabled={false}
+            >
+              <Marker
+                coordinate={{
+                  latitude: selectedGathering.latitude,
+                  longitude: selectedGathering.longitude,
+                }}
+                title={selectedGathering.location_name || "Meeting Point"}
+              />
+            </MapView>
+          </View>
+        ) : <Text style={styles.noMapText}>Location Map not added</Text>}
+
+        <Text style={styles.description}>
+          {selectedGathering?.description || "No description provided"}
+        </Text>
+
+        {/* Pass callback function to refresh guest list */}
+        <JoinGatheringButton onGuestStatusChange={refreshGuestList} />
+
       </View>
-      <InviteGatheringButton />
-    </>
+      
+      <Text style={styles.guestListTitle}>Guest List</Text>
+      
+      <View style={styles.guestListWrapper}>
+        {guestList.length > 0 ? (
+          guestList.map((item) => (
+            <GuestItem 
+              key={item.user_id} 
+              item={item} 
+              onGuestUpdate={refreshGuestList} // Pasamos la función de actualización a cada GuestItem
+            />
+          ))
+        ) : (
+          <Text style={styles.emptyListText}>No guests yet</Text>
+        )}
+      </View>
+    </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  scrollContainer: {
+    padding: 12,
+    paddingBottom: 20,
+  },
+  gatheringInfoContainer: {
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderBottomWidth: 2,
+    borderColor: COLORS.primaryDark
+  },
+  gatheringName: {
+    fontSize: 22,
+    marginBottom: 12,
+    color: "black",
+    fontFamily: FONTS.bold,
+    paddingBottom: 8,
+    textAlign: "center"
+  },
+  detailRow: {
+    flexDirection: "row",
+    marginBottom: 8,
+  },
+  detailLabel: {
+    marginRight: 8,
+    color: COLORS.primaryDark,
+    fontFamily: FONTS.semiBold,
+    width: 80,
+  },
+  detailValue: {
+    flex: 1,
+    fontFamily: FONTS.regular,
+  },
+  mapContainer: {
+    height: 200,
+    borderRadius: 8,
+    overflow: 'hidden',
+    marginVertical: 12,
+    borderWidth: 1
+  },
+  map: {
+    width: '100%',
+    height: '100%',
+  },
+  noMapText: {
+    fontFamily: FONTS.semiBold,
+    textAlign: "center",
+    fontSize: 18,
+    marginVertical: 20
+  },
+  description: {
+    marginTop: 12,
+    fontFamily: FONTS.regular,
+    lineHeight: 20,
+  },
+  guestListTitle: {
+    fontSize: 18,
+    marginBottom: 12,
+    color: "black",
+    fontFamily: FONTS.bold,
+    paddingBottom: 8,
+    textAlign: "center"
+  },
+  guestListWrapper: {
+    minHeight: 200, // Altura mínima para que se vea bien
+  },
+  emptyListText: {
+    color: "black",
+    fontFamily: FONTS.regular,
+    textAlign: "center",
+    marginVertical: 20
+  },
+});

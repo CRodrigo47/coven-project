@@ -2,14 +2,17 @@ import { useState, useEffect, useRef } from 'react';
 import { View, TextInput, FlatList, Text, TouchableOpacity, Modal, StyleSheet, Dimensions, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
-import { useRouter } from 'expo-router';
+import {  usePathname, useRouter } from 'expo-router';
 import useGlobalStore from '@/context/useStore';
 import UserInterface from '@/app/interfaces/userInterface';
+import { COLORS } from '@/constants/COLORS';
+import { FONTS } from '@/constants/FONTS';
 
 const { width, height } = Dimensions.get('window');
 
 export const UserSearchModal = () => {
   const router = useRouter();
+  const pathname = usePathname()
   const setSelectedUser = useGlobalStore((state: any) => state.setSelectedUser);
   const [visible, setVisible] = useState(false);
   const [searchText, setSearchText] = useState('');
@@ -73,7 +76,11 @@ export const UserSearchModal = () => {
 
   const handleUserSelect = (user: UserInterface) => {
     setSelectedUser(user);
-    router.push(`/${user.user_name}`);
+    if(pathname.includes("mainTabs")){
+      router.push(`/${user.user_name}`);
+    }else{
+      router.replace(`/${user.user_name}`);
+    }
     setVisible(false);
     setSearchText('');
     setUsers([]);
@@ -107,7 +114,7 @@ export const UserSearchModal = () => {
               <View style={styles.searchHeader}>
                 <TextInput
                   style={styles.searchInput}
-                  placeholder="Buscar usuarios..."
+                  placeholder="Search users..."
                   placeholderTextColor="#999"
                   value={searchText}
                   onChangeText={setSearchText}
@@ -129,15 +136,15 @@ export const UserSearchModal = () => {
               {showLoading ? (
                 <View style={styles.loadingContainer}>
                   <ActivityIndicator size="small" color="#8C5ABE" />
-                  <Text style={styles.loadingText}>Buscando usuarios...</Text>
+                  <Text style={styles.loadingText}>Searching users...</Text>
                 </View>
               ) : showNoResults ? (
                 <View style={styles.emptyContainer}>
-                  <Text style={styles.emptyText}>No se encontraron usuarios</Text>
+                  <Text style={styles.emptyText}>No users found</Text>
                 </View>
               ) : showInitialState ? (
                 <View style={styles.emptyContainer}>
-                  <Text style={styles.emptyText}>Escribe para buscar usuarios</Text>
+                  <Text style={styles.emptyText}>Type to search users</Text>
                 </View>
               ) : (
                 <FlatList
@@ -176,7 +183,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   searchBox: {
-    backgroundColor: '#fcf5d7',
+    backgroundColor: COLORS.background,
     borderRadius: 12,
     padding: 16,
   },
@@ -192,7 +199,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
     borderRadius: 8,
     marginRight: 8,
-    borderWidth: 1
+    borderWidth: 1,
+    fontFamily: FONTS.medium
   },
   closeButton: {
     padding: 8,
@@ -207,6 +215,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
     marginLeft: 10,
+    fontFamily: FONTS.medium
   },
   listContainer: {
     paddingBottom: 16,
@@ -219,6 +228,7 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 16,
     color: '#333',
+    fontFamily: FONTS.medium
   },
   emptyContainer: {
     padding: 20,
@@ -227,5 +237,6 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     color: '#666',
+    fontFamily: FONTS.medium
   },
 });

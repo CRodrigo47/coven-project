@@ -12,7 +12,6 @@ export default function LogOut() {
 
         if (error) {
           console.error("Error al cerrar sesión:", error.message);
-          // Podrías redirigir a una página de error o mostrar un mensaje
           return;
         }
 
@@ -25,9 +24,8 @@ export default function LogOut() {
     handleLogOut();
 
     return () => {
-      // Limpieza si es necesaria
     };
-  }, [router]); // Añadimos router como dependencia
+  }, [router]);
 
   return null;
 }

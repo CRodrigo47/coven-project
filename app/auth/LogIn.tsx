@@ -1,32 +1,41 @@
-import { Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { Link } from "expo-router";
 import { Logo } from "@/constants/covenIcons";
-import GoogleAuth from "@/components/googleAuth";
+import { getTypography } from "@/constants/TYPOGRAPHY";
+import { COLORS } from "@/constants/COLORS";
 import LoginForm from "@/components/logInForm";
 
 export default function LogIn() {
-
-
   return (
-    <View
-      className="h-full"
-      style={{
-        flex: 1,
-        alignItems: "center",
-        backgroundColor: "#fcf5d7",
-      }}
-    >
-      <View className="mt-32">
-        <Logo></Logo>
+    <View style={styles.container}>
+      <View style={styles.logoContainer}>
+        <Logo />
       </View>
-      <LoginForm/>
-      {/* <View className="m-2">
-        <GoogleAuth />
-      </View> */}
-          <Text >Aun no tienes cuenta?</Text>
-          <Link href="/createAccount" className="text-center py-2" style={{color: "#6E4894"}}>
-            Crea una
-          </Link>
-      </View>
+      <LoginForm />
+      <Text style={styles.footerText}>Don't have an account yet?</Text>
+      <Link href="/createAccount" style={styles.createAccountLink}>
+        Create one
+      </Link>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    alignItems: "center",
+    backgroundColor: "#fcf5d7",
+    paddingTop: 120,
+  },
+  logoContainer: {
+    marginBottom: 40,
+  },
+  footerText: {
+    ...getTypography("bodyMedium", "light"),
+  },
+  createAccountLink: {
+    ...getTypography("bodyMedium", "light"),
+    color: COLORS.primary,
+    textAlign: "center"
+  },
+});

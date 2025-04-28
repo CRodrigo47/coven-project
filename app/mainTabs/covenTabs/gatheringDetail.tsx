@@ -8,7 +8,8 @@ import { FlatList, Text, View, StyleSheet, ScrollView } from "react-native";
 import { COLORS } from "@/constants/COLORS";
 import { FONTS } from "@/constants/FONTS";
 import MapView, { Marker } from "react-native-maps";
-import JoinGatheringButton from "@/components/JoinGatheringButton";
+import JoinGatheringButton from "@/components/GatheringComponents/JoinGatheringButton";
+import CreateGatheringButton from "@/components/GatheringComponents/CreateGatheringButton";
 
 const fetchGuestsWithUserIcons = async (gatheringId: string) => {
   const { data, error } = await supabase
@@ -41,17 +42,15 @@ export default function GatheringDetail() {
   // Function to refresh guest list
   const refreshGuestList = async () => {
     if (!selectedGathering?.id) return;
-    
-    const fetchGuestList = await fetchGuestsWithUserIcons(
-      selectedGathering.id
-    );
+
+    const fetchGuestList = await fetchGuestsWithUserIcons(selectedGathering.id);
     setGuestList(fetchGuestList);
   };
 
   useFocusEffect(
     useCallback(() => {
       if (!selectedGathering?.id) return;
-      
+
       refreshGuestList();
     }, [selectedGathering?.id])
   );
@@ -65,111 +64,121 @@ export default function GatheringDetail() {
     });
   };
 
-  const formatTime = (timeString: string) => {
+  const formatTime = (timeString: string | undefined | null) => {
+    if (!timeString || typeof timeString !== "string") {
+      return "Not specified";
+    }
     return timeString.substring(0, 5);
   };
 
   // Check if we have valid coordinates to display the map
-  const hasValidCoordinates = 
-    selectedGathering?.latitude != null && 
-    selectedGathering?.longitude != null;
+  const hasValidCoordinates =
+    selectedGathering?.latitude != null && selectedGathering?.longitude != null;
 
   return (
-    <ScrollView style={styles.container}
-    contentContainerStyle={styles.scrollContainer}>
-      <View style={styles.gatheringInfoContainer}>
-        <Text style={styles.gatheringName}>
-          {selectedGathering?.name || "No gathering selected"}
-        </Text>
-
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Location:</Text>
-          <Text style={styles.detailValue}>
-            {selectedGathering?.location_name}
+    <>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.scrollContainer}
+      >
+        <View style={styles.gatheringInfoContainer}>
+          <Text style={styles.gatheringName}>
+            {selectedGathering?.name || "No gathering selected"}
           </Text>
-        </View>
 
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Date:</Text>
-          <Text style={styles.detailValue}>
-            {selectedGathering?.date
-              ? formatDate(selectedGathering.date)
-              : "Not specified"}
-          </Text>
-        </View>
-
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Time:</Text>
-          <Text style={styles.detailValue}>
-            {formatTime(selectedGathering?.time) || "Not specified"}
-          </Text>
-        </View>
-
-        {selectedGathering?.transport && (
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Transport:</Text>
+            <Text style={styles.detailLabel}>Location:</Text>
             <Text style={styles.detailValue}>
-              {selectedGathering.transport}
+              {selectedGathering?.location_name}
             </Text>
           </View>
-        )}
 
-        {selectedGathering?.cost && (
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Cost:</Text>
-            <Text style={styles.detailValue}>{selectedGathering.cost}€</Text>
+            <Text style={styles.detailLabel}>Date:</Text>
+            <Text style={styles.detailValue}>
+              {selectedGathering?.date
+                ? formatDate(selectedGathering.date)
+                : "Not specified"}
+            </Text>
           </View>
-        )}
 
-        {hasValidCoordinates ? (
-          <View style={styles.mapContainer}>
-            <MapView
-              style={styles.map}
-              region={{
-                latitude: selectedGathering.latitude,
-                longitude: selectedGathering.longitude,
-                latitudeDelta: 0.01,
-                longitudeDelta: 0.01,
-              }}
-              pitchEnabled={false}
-              toolbarEnabled={false}
-            >
-              <Marker
-                coordinate={{
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Time:</Text>
+            <Text style={styles.detailValue}>
+              {selectedGathering?.time
+                ? formatTime(selectedGathering.time)
+                : "Not specified"}
+            </Text>
+          </View>
+
+          {selectedGathering?.transport && (
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Transport:</Text>
+              <Text style={styles.detailValue}>
+                {selectedGathering.transport}
+              </Text>
+            </View>
+          )}
+
+          {selectedGathering?.cost && (
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Cost:</Text>
+              <Text style={styles.detailValue}>{selectedGathering.cost}€</Text>
+            </View>
+          )}
+
+          {hasValidCoordinates ? (
+            <View style={styles.mapContainer}>
+              <MapView
+                style={styles.map}
+                region={{
                   latitude: selectedGathering.latitude,
                   longitude: selectedGathering.longitude,
+                  latitudeDelta: 0.01,
+                  longitudeDelta: 0.01,
                 }}
-                title={selectedGathering.location_name || "Meeting Point"}
+                pitchEnabled={false}
+                toolbarEnabled={false}
+              >
+                <Marker
+                  coordinate={{
+                    latitude: selectedGathering.latitude,
+                    longitude: selectedGathering.longitude,
+                  }}
+                  title={selectedGathering.location_name || "Meeting Point"}
+                />
+              </MapView>
+            </View>
+          ) : (
+            <Text style={styles.noMapText}>Location Map not added</Text>
+          )}
+
+          <Text style={styles.description}>
+            {selectedGathering?.description || "No description provided"}
+          </Text>
+
+          {/* Pass callback function to refresh guest list */}
+          <JoinGatheringButton onGuestStatusChange={refreshGuestList} />
+        </View>
+
+        <Text style={styles.guestListTitle}>Guest List</Text>
+
+        <View style={styles.guestListWrapper}>
+          {guestList.length > 0 ? (
+            guestList.map((item) => (
+              <GuestItem
+                key={item.user_id}
+                item={item}
+                onGuestUpdate={refreshGuestList} // Pasamos la función de actualización a cada GuestItem
               />
-            </MapView>
-          </View>
-        ) : <Text style={styles.noMapText}>Location Map not added</Text>}
-
-        <Text style={styles.description}>
-          {selectedGathering?.description || "No description provided"}
-        </Text>
-
-        {/* Pass callback function to refresh guest list */}
-        <JoinGatheringButton onGuestStatusChange={refreshGuestList} />
-
-      </View>
-      
-      <Text style={styles.guestListTitle}>Guest List</Text>
-      
-      <View style={styles.guestListWrapper}>
-        {guestList.length > 0 ? (
-          guestList.map((item) => (
-            <GuestItem 
-              key={item.user_id} 
-              item={item} 
-              onGuestUpdate={refreshGuestList} // Pasamos la función de actualización a cada GuestItem
-            />
-          ))
-        ) : (
-          <Text style={styles.emptyListText}>No guests yet</Text>
-        )}
-      </View>
-    </ScrollView>
+            ))
+          ) : (
+            <Text style={styles.emptyListText}>No guests yet</Text>
+          )}
+        </View>
+      </ScrollView>
+      <CreateGatheringButton />
+    </>
   );
 }
 
@@ -187,7 +196,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 16,
     borderBottomWidth: 2,
-    borderColor: COLORS.primaryDark
+    borderColor: COLORS.primaryDark,
   },
   gatheringName: {
     fontSize: 22,
@@ -195,7 +204,7 @@ const styles = StyleSheet.create({
     color: "black",
     fontFamily: FONTS.bold,
     paddingBottom: 8,
-    textAlign: "center"
+    textAlign: "center",
   },
   detailRow: {
     flexDirection: "row",
@@ -214,19 +223,19 @@ const styles = StyleSheet.create({
   mapContainer: {
     height: 200,
     borderRadius: 8,
-    overflow: 'hidden',
+    overflow: "hidden",
     marginVertical: 12,
-    borderWidth: 1
+    borderWidth: 1,
   },
   map: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
   noMapText: {
     fontFamily: FONTS.semiBold,
     textAlign: "center",
     fontSize: 18,
-    marginVertical: 20
+    marginVertical: 20,
   },
   description: {
     marginTop: 12,
@@ -239,7 +248,7 @@ const styles = StyleSheet.create({
     color: "black",
     fontFamily: FONTS.bold,
     paddingBottom: 8,
-    textAlign: "center"
+    textAlign: "center",
   },
   guestListWrapper: {
     minHeight: 200, // Altura mínima para que se vea bien
@@ -248,6 +257,6 @@ const styles = StyleSheet.create({
     color: "black",
     fontFamily: FONTS.regular,
     textAlign: "center",
-    marginVertical: 20
+    marginVertical: 20,
   },
 });

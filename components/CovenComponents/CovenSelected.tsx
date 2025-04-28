@@ -13,6 +13,14 @@ export default function CovenSelected({ item }: { item: CovenInterface }) {
   const [historyGatherings, setHistoryGatherings] = useState<GatheringInterface[]>([]);
 
   const fetchAndFilterGatherings = useCallback(async () => {
+        // Verificar que item existe y tiene un id
+        if (!item || !item.id) {
+          console.log('No valid Coven selected');
+          setNextGatherings([]);
+          setHistoryGatherings([]);
+          return;
+        }
+
     try {
       const { data, error } = await supabase
         .from('Gathering')
@@ -32,7 +40,7 @@ export default function CovenSelected({ item }: { item: CovenInterface }) {
       setNextGatherings([]);
       setHistoryGatherings([]);
     }
-  }, [item.id]);
+  }, [item]);
 
   useFocusEffect(
     useCallback(() => {
@@ -40,10 +48,18 @@ export default function CovenSelected({ item }: { item: CovenInterface }) {
     }, [fetchAndFilterGatherings])
   );
 
+  if (!item || !item.id) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.emptyText}>No Coven selected</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <Text style={[getTypography("titleLarge", "light"), styles.sectionTitle]}>
-        Next gatherings
+        Upcoming gatherings
       </Text>
       <FlatList
         data={nextGatherings}

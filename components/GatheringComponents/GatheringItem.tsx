@@ -22,6 +22,8 @@ export default function GatheringItem({ item }: { item: GatheringInterface }) {
     }
   };
 
+  const timeString = item.time && typeof item.time === "string";
+
   return (
     <TouchableOpacity onPress={moveToDetail}>
       <View style={styles.gatheringInfo}>
@@ -29,7 +31,12 @@ export default function GatheringItem({ item }: { item: GatheringInterface }) {
           <Text style={getTypography("bodyLarge", "light")}>{item.name}</Text>
         </View>
         <View className="w-1/2 pe-4 py-2" style={styles.rightSection}>
-          <Text className="text-center" style={getTypography("bodyMedium", "light")}>{item.time.substring(0, 5)}</Text>
+          <Text
+            className="text-center"
+            style={getTypography("bodyMedium", "light")}
+          >
+            {timeString ? item.time.substring(0, 5) : "No time"}
+          </Text>
           <Text style={getTypography("bodyMedium", "light")}>{item.date}</Text>
         </View>
       </View>

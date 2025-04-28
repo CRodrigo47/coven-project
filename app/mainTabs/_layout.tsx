@@ -68,7 +68,7 @@ export default function MainTabsLayout() {
           <Tabs.Screen
             name="covenTabs"
             options={{
-              title: "",
+              title: "covenTabs",
               popToTopOnBlur: true,
               tabBarIcon: ({ focused }) => (
                 <Ionicons
@@ -82,7 +82,7 @@ export default function MainTabsLayout() {
           <Tabs.Screen
             name="publicTabs"
             options={{
-              title: "",
+              title: "publicTabs",
               popToTopOnBlur: true,
               tabBarIcon: ({ focused }) => (
                 <Ionicons
@@ -96,7 +96,7 @@ export default function MainTabsLayout() {
           <Tabs.Screen
             name="settingsTabs"
             options={{
-              title: "",
+              title: "settingsTabs",
               popToTopOnBlur: true,
               tabBarIcon: ({ focused }) => (
                 <Ionicons
@@ -110,7 +110,7 @@ export default function MainTabsLayout() {
           <Tabs.Screen
             name="logOut"
             options={{
-              title: "",
+              title: "logOut",
               tabBarIcon: ({ focused }) => (
                 <Ionicons
                   name={"log-out"}

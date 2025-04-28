@@ -21,6 +21,7 @@ const styles = StyleSheet.create({
         right: 15,
         borderWidth: 1,
         borderRadius: 15,
+        width: 130,
         backgroundColor: COLORS.secondary
     }
 })

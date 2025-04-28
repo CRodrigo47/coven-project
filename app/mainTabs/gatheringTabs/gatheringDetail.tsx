@@ -8,7 +8,8 @@ import { FlatList, Text, View, StyleSheet, ScrollView } from "react-native";
 import { COLORS } from "@/constants/COLORS";
 import { FONTS } from "@/constants/FONTS";
 import MapView, { Marker } from "react-native-maps";
-import JoinGatheringButton from "@/components/JoinGatheringButton";
+import JoinGatheringButton from "@/components/GatheringComponents/JoinGatheringButton";
+import CreateGatheringButton from "@/components/GatheringComponents/CreateGatheringButton";
 
 const fetchGuestsWithUserIcons = async (gatheringId: string) => {
   const { data, error } = await supabase
@@ -75,6 +76,7 @@ export default function GatheringDetail() {
     selectedGathering?.longitude != null;
 
   return (
+    <>
     <ScrollView style={styles.container}
     contentContainerStyle={styles.scrollContainer}>
       <View style={styles.gatheringInfoContainer}>
@@ -170,6 +172,9 @@ export default function GatheringDetail() {
         )}
       </View>
     </ScrollView>
+    <CreateGatheringButton />
+    </>
+    
   );
 }
 

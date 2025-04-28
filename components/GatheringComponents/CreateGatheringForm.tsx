@@ -29,12 +29,12 @@ const gatheringSchema = yup.object({
     .required("Date is required")
     .typeError("Please enter a valid date in YYYY-MM-DD format"),
   time: yup
-    .string()
-    .matches(
-      /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/,
-      "Please enter a valid time (HH:MM)"
-    )
-    .required("Time is required"),
+  .string()
+  .matches(
+    /^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/, // Solo HH:MM (00:00 a 23:59)
+    "Please enter a valid time in HH:MM format (e.g., 14:30)"
+  )
+  .required("Time is required"),
   transport: yup.string().nullable().default(null),
   cost: yup.number().nullable().default(0),
   meal: yup.string().nullable().default(null),
@@ -50,6 +50,9 @@ export default function CreateGatheringForm() {
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
   const selectedCoven = useGlobalStore((state: any) => state.selectedCoven);
+  const selectedGathering = useGlobalStore(
+    (state: any) => state.selectedGathering
+  );
   const setSelectedGathering = useGlobalStore(
     (state: any) => state.setSelectedGathering
   );
@@ -65,16 +68,29 @@ export default function CreateGatheringForm() {
   const [isPublicCoven, setIsPublicCoven] = useState(false);
   const [tagsText, setTagsText] = useState("");
   const [dateInput, setDateInput] = useState("");
+  const [isUpdateMode, setIsUpdateMode] = useState(false);
+  const [covenId, setCovenId] = useState<string | null>(null);
+  const [deletingGathering, setDeletingGathering] = useState(false);
+
+  // Determine if we're in update mode
+  useEffect(() => {
+    if (selectedGathering) {
+      setIsUpdateMode(true);
+      setCovenId(selectedGathering.coven_id);
+    } else if (selectedCoven) {
+      setCovenId(selectedCoven.id);
+    }
+  }, [selectedGathering, selectedCoven]);
 
   useEffect(() => {
     const checkCovenPublicStatus = async () => {
-      if (!selectedCoven?.id) return;
+      if (!covenId) return;
 
       try {
         const { data, error } = await supabase
           .from("Coven")
           .select("is_public")
-          .eq("id", selectedCoven.id)
+          .eq("id", covenId)
           .single();
 
         if (error) throw error;
@@ -85,7 +101,7 @@ export default function CreateGatheringForm() {
     };
 
     checkCovenPublicStatus();
-  }, [selectedCoven]);
+  }, [covenId]);
 
   useEffect(() => {
     (async () => {
@@ -97,21 +113,38 @@ export default function CreateGatheringForm() {
         }
 
         setLoadingLocation(true);
-        let location = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.High,
-        });
 
-        const userCoords = {
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-        };
+        // If we have a selected gathering, use its coordinates
+        if (selectedGathering) {
+          const gatheringCoords = {
+            latitude: selectedGathering.latitude,
+            longitude: selectedGathering.longitude,
+          };
 
-        setCoordinates(userCoords);
-        setInitialRegion({
-          ...userCoords,
-          latitudeDelta: 0.0922,
-          longitudeDelta: 0.0421,
-        });
+          setCoordinates(gatheringCoords);
+          setInitialRegion({
+            ...gatheringCoords,
+            latitudeDelta: 0.0922,
+            longitudeDelta: 0.0421,
+          });
+        } else {
+          // Otherwise, use current location
+          let location = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.High,
+          });
+
+          const userCoords = {
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude,
+          };
+
+          setCoordinates(userCoords);
+          setInitialRegion({
+            ...userCoords,
+            latitudeDelta: 0.0922,
+            longitudeDelta: 0.0421,
+          });
+        }
       } catch (error) {
         console.error("Location error:", error);
         Alert.alert("Error", "Could not get your location");
@@ -119,7 +152,7 @@ export default function CreateGatheringForm() {
         setLoadingLocation(false);
       }
     })();
-  }, []);
+  }, [selectedGathering]);
 
   useEffect(() => {
     const fetchUserId = async () => {
@@ -141,6 +174,7 @@ export default function CreateGatheringForm() {
     formState: { errors, isSubmitting },
     setValue,
     trigger,
+    reset,
   } = useForm<GatheringFormData>({
     resolver: yupResolver(gatheringSchema),
     defaultValues: {
@@ -158,6 +192,54 @@ export default function CreateGatheringForm() {
     },
   });
 
+  // Populate form when in update mode
+  useEffect(() => {
+    if (selectedGathering) {
+      // Format date from ISO string to Date object
+      const gatheringDate = new Date(selectedGathering.date);
+      const dateString = gatheringDate.toISOString().split("T")[0]; // YYYY-MM-DD
+      setDateInput(dateString);
+
+      // Extract time from the timestamp or use the time field if available
+      let timeString = selectedGathering.time;
+      if (!timeString && selectedGathering.date) {
+        const date = new Date(selectedGathering.date);
+        timeString = `${String(date.getHours()).padStart(2, "0")}:${String(
+          date.getMinutes()
+        ).padStart(2, "0")}`;
+      } else if (timeString) {
+        // Si timeString existe pero incluye segundos o zona horaria
+        // Extrae solo horas y minutos
+        timeString = timeString.split(":").slice(0, 2).join(":");
+      }
+
+      // Set form values
+      reset({
+        name: selectedGathering.name || "",
+        location_name: selectedGathering.location_name || "",
+        date: gatheringDate,
+        time: timeString || "",
+        transport: selectedGathering.transport || null,
+        cost: selectedGathering.cost || null,
+        meal: selectedGathering.meal || null,
+        extra_info: selectedGathering.extra_info || null,
+        description: selectedGathering.description || "",
+        tags: selectedGathering.tags || [],
+        advertisement: selectedGathering.advertisement || null,
+      });
+
+      // Set switch states
+      setHasCost(!!selectedGathering.cost);
+      setHasMeal(!!selectedGathering.meal);
+      setHasExtraInfo(!!selectedGathering.extra_info);
+
+      // Set tags text
+      setTagsText(
+        selectedGathering.tags ? selectedGathering.tags.join(", ") : ""
+      );
+    }
+  }, [selectedGathering, reset]);
+
   const handleTagsChange = (text: string) => {
     setTagsText(text);
     const tagsArray = text
@@ -171,41 +253,125 @@ export default function CreateGatheringForm() {
     try {
       if (!userId) throw new Error("Could not get user ID");
       if (!coordinates) throw new Error("Location not selected");
+      if (!covenId) throw new Error("No coven selected");
 
       const formattedDate = new Date(formData.date).toISOString();
+      const formattedTime = formData.time.split(':').slice(0, 2).join(':');
 
       const gatheringData = {
         ...formData,
+        time: formattedTime,
         date: formattedDate,
         latitude: coordinates.latitude,
         longitude: coordinates.longitude,
-        created_at: new Date().toISOString(),
-        created_by: userId,
-        coven_id: selectedCoven.id,
+        coven_id: covenId,
       };
 
-      const { data, error } = await supabase
-        .from("Gathering")
-        .insert([gatheringData])
-        .select()
-        .single();
+      let data;
+      let error;
+
+      if (isUpdateMode && selectedGathering) {
+        // Update existing gathering
+        const { data: updatedData, error: updateError } = await supabase
+          .from("Gathering")
+          .update(gatheringData)
+          .eq("id", selectedGathering.id)
+          .select()
+          .single();
+
+        data = updatedData;
+        error = updateError;
+
+        if (!error) {
+          Alert.alert("Success", "Gathering updated successfully");
+        }
+      } else {
+        // Create new gathering
+        const { data: newData, error: createError } = await supabase
+          .from("Gathering")
+          .insert([
+            {
+              ...gatheringData,
+              created_at: new Date().toISOString(),
+              created_by: userId,
+            },
+          ])
+          .select()
+          .single();
+
+        data = newData;
+        error = createError;
+
+        if (!error) {
+          Alert.alert("Success", "Gathering created successfully");
+        }
+      }
 
       if (error) throw error;
-      if (!data) throw new Error("No data returned from insert");
+      if (!data) throw new Error("No data returned from operation");
 
       setSelectedGathering(data);
-
       router.push("/mainTabs/covenTabs/gatheringDetail");
-
-      Alert.alert("Success", "Gathering created successfully");
-    } catch (error) {
-      Alert.alert("Error", error.message || "Failed to create gathering");
+    } catch (error: any) {
+      Alert.alert("Error", error.message || "Failed to save gathering");
       console.error("Error:", error);
     }
   };
 
+  const handleDeleteGathering = async () => {
+    if (!selectedGathering) return;
+
+    // Show confirmation dialog
+    Alert.alert(
+      "Delete Gathering",
+      "Are you sure you want to delete this gathering? This action cannot be undone.",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setDeletingGathering(true);
+              
+              const { error } = await supabase
+                .from("Gathering")
+                .delete()
+                .eq("id", selectedGathering.id);
+
+
+              if (error) throw error;
+              Alert.alert("Success", "Gathering deleted successfully");
+              router.push("/mainTabs/covenTabs");
+            } catch (error) {
+              let errorMessage = "Failed to delete Gathering";
+              
+              if (error instanceof Error) {
+                errorMessage = error.message;
+              }
+              
+              Alert.alert("Error", errorMessage);
+              console.error("Detailed error:", error);
+            } finally {
+              setDeletingGathering(false);
+            }
+          }
+        }
+      ]
+    );
+  };
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      <View style={styles.headerContainer}>
+        <Text style={styles.formTitle}>
+          {isUpdateMode ? "Update Gathering" : "Create Gathering"}
+        </Text>
+      </View>
+
       <View style={styles.inputGroup}>
         <Text style={styles.label}>Gathering Name*</Text>
         <Controller
@@ -353,7 +519,7 @@ export default function CreateGatheringForm() {
       </View>
 
       <View style={styles.inputGroup}>
-        <Text style={styles.label}>Transportation</Text>
+        <Text style={styles.label}>Transport</Text>
         <Controller
           control={control}
           name="transport"
@@ -510,13 +676,28 @@ export default function CreateGatheringForm() {
           <ActivityIndicator size="small" color={COLORS.primary} />
         ) : (
           <Button
-            title="Create Gathering"
+            title={isUpdateMode ? "Update Gathering" : "Create Gathering"}
             onPress={handleSubmit(onSubmit)}
             disabled={isSubmitting}
             color={COLORS.primary}
           />
         )}
       </View>
+      
+      {isUpdateMode && (
+        <View style={styles.deleteButton}>
+          {deletingGathering ? (
+            <ActivityIndicator size="small" color={COLORS.danger} />
+          ) : (
+            <Button
+              title="Delete Gathering"
+              onPress={handleDeleteGathering}
+              disabled={deletingGathering}
+              color={COLORS.danger}
+            />
+          )}
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -525,6 +706,15 @@ const styles = StyleSheet.create({
   container: {
     padding: 16,
     paddingBottom: 30,
+  },
+  headerContainer: {
+    marginBottom: 20,
+    alignItems: "center",
+  },
+  formTitle: {
+    fontSize: 20,
+    fontFamily: FONTS.bold,
+    color: COLORS.primary,
   },
   inputGroup: {
     marginBottom: 16,
@@ -551,13 +741,13 @@ const styles = StyleSheet.create({
   mapContainer: {
     height: 200,
     borderRadius: 8,
-    overflow: 'hidden',
+    overflow: "hidden",
     marginVertical: 12,
-    borderWidth: 1
+    borderWidth: 1,
   },
   map: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
   mapLoading: {
     height: 200,
@@ -571,6 +761,11 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     marginTop: 16,
+    borderRadius: 8,
+    overflow: "hidden",
+  },
+  deleteButton: {
+    marginTop: 10,
     borderRadius: 8,
     overflow: "hidden",
   },

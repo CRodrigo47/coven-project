@@ -10,27 +10,23 @@ import { useFocusEffect } from "expo-router";
 
 export default function InviteQR() {
   const [friendList, setFriendList] = useState<{user_name: string, friend_id: string}[]>([]);
-  const [userId, setUserId] = useState<string | null>(null);
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const selectedCoven = useGlobalStore((state: any) => state.selectedCoven)
+  const authUserId = useGlobalStore((state: any) => state.authUserId);
+  const fetchAuthUserId = useGlobalStore((state: any) => state.fetchAuthUserId);
 
-  useFocusEffect(useCallback(() => {
-    const fetchUserId = async () => {
-      try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (user) setUserId(user.id);
-      } catch (err) {
-        console.error("Error getting user ID: ", err);
-      }
-    };
-    fetchUserId();
-  }, []));
+
+  useEffect(() => {
+    if (!authUserId) {
+      fetchAuthUserId();
+    }
+  }, [authUserId, fetchAuthUserId]);
+
+
 
   useFocusEffect(useCallback(() => {
     const fetchFriends = async () => {
-      if (!userId) return;
+      if (!authUserId) return;
   
       try {
         const { data, error } = await supabase
@@ -39,7 +35,7 @@ export default function InviteQR() {
             friend_id,
             User:friend_id (user_name)
           `)
-          .eq("user_id", userId);
+          .eq("user_id", authUserId);
   
         if (error) throw error;
   
@@ -56,7 +52,7 @@ export default function InviteQR() {
     };
   
     fetchFriends();
-  }, [userId])); // Añadir userId como dependencia
+  }, [authUserId])); // Añadir userId como dependencia
 
   const handleAddFriendToCoven = async (friendId: string) => {
     const newRow = {

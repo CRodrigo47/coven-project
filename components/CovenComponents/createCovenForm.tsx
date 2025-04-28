@@ -36,9 +36,17 @@ export default function CreateCovenForm() {
   // const [imageUri, setImageUri] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [isEnabled, setIsEnabled] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
   const [isUpdateMode, setIsUpdateMode] = useState(false);
   const [deletingCoven, setDeletingCoven] = useState(false);
+  const authUserId = useGlobalStore((state: any) => state.authUserId);
+  const fetchAuthUserId = useGlobalStore((state: any) => state.fetchAuthUserId);
+
+
+  useEffect(() => {
+    if (!authUserId) {
+      fetchAuthUserId();
+    }
+  }, [authUserId, fetchAuthUserId]);
   
   // Get selected coven from global store - we'll still use it for the data
   // but we won't depend on it for determining the mode
@@ -86,21 +94,6 @@ export default function CreateCovenForm() {
     }
   }, [isUpdateMode, selectedCoven, reset]);
 
-  useEffect(() => {
-    const fetchUserId = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          setUserId(user.id);
-        }
-      } catch (err) {
-        console.error("Error getting user ID:", err);
-      }
-    };
-
-    fetchUserId();
-  }, []);
-
   // useEffect(() => {
   //   setValue("coven_icon", imageUri);
   // }, [imageUri, setValue]);
@@ -114,7 +107,7 @@ export default function CreateCovenForm() {
   const onSubmit: SubmitHandler<CovenFormData> = async (formData) => {
     try {
 
-      if (!userId && !isUpdateMode) {
+      if (!authUserId && !isUpdateMode) {
         throw new Error("Could not get user ID");
       }
 
@@ -144,7 +137,7 @@ export default function CreateCovenForm() {
         const covenData = {
           ...formData,
           created_at: new Date().toISOString(),
-          created_by: userId,
+          created_by: authUserId,
           is_public: isEnabled
         };
 
@@ -163,7 +156,7 @@ export default function CreateCovenForm() {
             .from("_Members_")
             .insert([
               { 
-                user_id: userId, 
+                user_id: authUserId, 
                 coven_id: data.id
               }
             ]);

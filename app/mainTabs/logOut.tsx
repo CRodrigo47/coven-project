@@ -1,9 +1,11 @@
+import useGlobalStore from "@/context/useStore";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "expo-router";
 import { useEffect } from "react";
 
 export default function LogOut() {
   const router = useRouter();
+  const resetAuthId = useGlobalStore((state: any) => state.resetAuthId)
 
   useEffect(() => {
     const handleLogOut = async () => {
@@ -20,6 +22,7 @@ export default function LogOut() {
         console.error("Error inesperado al cerrar sesión:", error);
       }
     };
+    resetAuthId();
 
     handleLogOut();
 

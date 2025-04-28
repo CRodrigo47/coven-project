@@ -6,28 +6,23 @@ import { StyleSheet, Text, View } from "react-native";
 import { Alert, TouchableOpacity } from "react-native";
 
 export default function AddFriendButton() {
-  const [userId, setUserId] = useState<string | null>(null);
   const selectedUser = useGlobalStore((state: any) => state.selectedUser);
   const [alreadyFriend, setAlreadyFriend] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const authUserId = useGlobalStore((state: any) => state.authUserId);
+  const fetchAuthUserId = useGlobalStore((state: any) => state.fetchAuthUserId);
+
 
   useEffect(() => {
-    const fetchUserId = async () => {
-      try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (user) setUserId(user.id);
-      } catch (err) {
-        console.error("Error getting user ID: ", err);
-      }
-    };
-    fetchUserId();
-  }, []);
+    if (!authUserId) {
+      fetchAuthUserId();
+    }
+  }, [authUserId, fetchAuthUserId]);
+
 
   useEffect(() => {
     const checkFriend = async () => {
-      if (!selectedUser?.id || !userId) {
+      if (!selectedUser?.id || !authUserId) {
         setIsLoading(false);
         return;
       }
@@ -36,7 +31,7 @@ export default function AddFriendButton() {
         const { data, error } = await supabase
           .from("_Friend-list_")
           .select("*")
-          .eq("user_id", userId)
+          .eq("user_id", authUserId)
           .eq("friend_id", selectedUser.id)
           .single();
 
@@ -54,16 +49,16 @@ export default function AddFriendButton() {
       }
     };
 
-    if (userId && selectedUser?.id) {
+    if (authUserId && selectedUser?.id) {
       checkFriend();
     }
-  }, [selectedUser, userId]);
+  }, [selectedUser, authUserId]);
 
   const handleAddFriend = async () => {
-    if (!userId || !selectedUser?.id) return;
+    if (!authUserId || !selectedUser?.id) return;
     
     const newRow = {
-      user_id: userId,
+      user_id: authUserId,
       friend_id: selectedUser.id,
     };
 
@@ -86,13 +81,13 @@ export default function AddFriendButton() {
   };
 
   const handleUnfriend = async () => {
-    if (!userId || !selectedUser?.id) return;
+    if (!authUserId || !selectedUser?.id) return;
     
     try {
       const { error } = await supabase
         .from("_Friend-list_")
         .delete()
-        .eq("user_id", userId)
+        .eq("user_id", authUserId)
         .eq("friend_id", selectedUser.id);
 
       if (error) throw error;

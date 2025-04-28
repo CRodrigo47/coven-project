@@ -11,7 +11,6 @@ interface JoinGatheringButtonProps {
 }
 
 export default function JoinGatheringButton({ onGuestStatusChange }: JoinGatheringButtonProps) {
-  const [userId, setUserId] = useState<string | null>(null);
   const selectedGathering = useGlobalStore(
     (state: any) => state.selectedGathering
   );
@@ -27,23 +26,19 @@ export default function JoinGatheringButton({ onGuestStatusChange }: JoinGatheri
   // State for leave modal
   const [leaveModalVisible, setLeaveModalVisible] = useState<boolean>(false);
 
+  const authUserId = useGlobalStore((state: any) => state.authUserId);
+  const fetchAuthUserId = useGlobalStore((state: any) => state.fetchAuthUserId);
+
+
   useEffect(() => {
-    const fetchUserId = async () => {
-      try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (user) setUserId(user.id);
-      } catch (err) {
-        console.error("Error getting user ID: ", err);
-      }
-    };
-    fetchUserId();
-  }, []);
+    if (!authUserId) {
+      fetchAuthUserId();
+    }
+  }, [authUserId, fetchAuthUserId]);
 
   useEffect(() => {
     const checkFriend = async () => {
-      if (!selectedGathering?.id || !userId) {
+      if (!selectedGathering?.id || !authUserId) {
         setIsLoading(false);
         return;
       }
@@ -52,7 +47,7 @@ export default function JoinGatheringButton({ onGuestStatusChange }: JoinGatheri
         const { data, error } = await supabase
           .from("Guest")
           .select("*")
-          .eq("user_id", userId)
+          .eq("user_id", authUserId)
           .eq("gathering_id", selectedGathering.id)
           .single();
 
@@ -70,16 +65,16 @@ export default function JoinGatheringButton({ onGuestStatusChange }: JoinGatheri
       }
     };
 
-    if (userId && selectedGathering?.id) {
+    if (authUserId && selectedGathering?.id) {
       checkFriend();
     }
-  }, [selectedGathering, userId]);
+  }, [selectedGathering, authUserId]);
 
   const handleJoinGathering = async () => {
-    if (!userId || !selectedGathering?.id) return;
+    if (!authUserId || !selectedGathering?.id) return;
 
     const newRow = {
-      user_id: userId,
+      user_id: authUserId,
       gathering_id: selectedGathering.id,
       expenses: 0,
       remarks: hasRemarks ? userRemarks : null,
@@ -110,13 +105,13 @@ export default function JoinGatheringButton({ onGuestStatusChange }: JoinGatheri
   };
 
   const handleLeaveGathering = async () => {
-    if (!userId || !selectedGathering?.id) return;
+    if (!authUserId || !selectedGathering?.id) return;
 
     try {
       const { error } = await supabase
         .from("Guest")
         .delete()
-        .eq("user_id", userId)
+        .eq("user_id", authUserId)
         .eq("gathering_id", selectedGathering.id);
 
       if (error) throw error;

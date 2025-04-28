@@ -17,10 +17,7 @@ import { FONTS } from "@/constants/FONTS";
 import { COLORS } from "@/constants/COLORS";
 
 const registerSchema = yup.object({
-  email: yup
-    .string()
-    .email("Email is not valid")
-    .required("Email is required"),
+  email: yup.string().email("Email is not valid").required("Email is required"),
   password: yup
     .string()
     .min(8, "Password must be at least 8 characters")
@@ -78,50 +75,50 @@ export default function RegisterForm() {
   const uploadImage = async (uri: string, userId: string) => {
     try {
       let blob;
-      if (uri.startsWith('file://') || uri.startsWith('content://')) {
+      if (uri.startsWith("file://") || uri.startsWith("content://")) {
         const response = await fetch(uri);
         blob = await response.blob();
-      } else if (uri.startsWith('data:')) {
+      } else if (uri.startsWith("data:")) {
         const response = await fetch(uri);
         blob = await response.blob();
       } else {
-        throw new Error('Unsupported image format');
+        throw new Error("Unsupported image format");
       }
-  
-      const fileExt = uri.split('.').pop()?.toLowerCase() || 'jpg';
+
+      const fileExt = uri.split(".").pop()?.toLowerCase() || "jpg";
       const fileName = `user_avatars/${userId}/avatar.${fileExt}`;
-      const mimeType = `image/${fileExt === 'png' ? 'png' : 'jpeg'}`;
-  
+      const mimeType = `image/${fileExt === "png" ? "png" : "jpeg"}`;
+
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('avatars')
+        .from("avatars")
         .upload(fileName, blob, {
           contentType: mimeType,
           upsert: true,
-          cacheControl: '3600'
+          cacheControl: "3600",
         });
-  
+
       if (uploadError) throw uploadError;
-  
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(fileName);
-  
-      if (!publicUrl) throw new Error('Could not get public URL');
-  
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("avatars").getPublicUrl(fileName);
+
+      if (!publicUrl) throw new Error("Could not get public URL");
+
       const { error: updateError } = await supabase
-        .from('User')
+        .from("User")
         .update({ user_icon: publicUrl })
-        .eq('id', userId);
-  
+        .eq("id", userId);
+
       if (updateError) throw updateError;
-  
+
       return publicUrl;
     } catch (error) {
-      console.log('Image upload error:', error);
+      console.log("Image upload error:", error);
       throw error;
     }
   };
-  
+
   const handleAgeChange = (text: string) => {
     const numericValue = text.replace(/[^0-9]/g, "");
     setValue("age", numericValue === "" ? 0 : Number(numericValue), {
@@ -137,18 +134,18 @@ export default function RegisterForm() {
   const handleRegister = async (formData: RegisterFormData) => {
     try {
       setLoading(true);
-      
+
       // Comprobar si el nombre de usuario ya existe
       const { data: usernameCheck } = await supabase
-        .from('User')
-        .select('user_name')
-        .eq('user_name', formData.user_name)
+        .from("User")
+        .select("user_name")
+        .eq("user_name", formData.user_name)
         .maybeSingle();
-  
+
       if (usernameCheck) {
-        throw new Error('Username already in use');
+        throw new Error("Username already in use");
       }
-  
+
       // Registrar el usuario en Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
@@ -157,65 +154,67 @@ export default function RegisterForm() {
           data: {
             name: formData.name,
             last_name: formData.last_name,
-            user_name: formData.user_name
-          }
-        }
+            user_name: formData.user_name,
+          },
+        },
       });
-  
+
       if (authError) {
-        if (authError.message.includes('User already registered')) {
+        if (authError.message.includes("User already registered")) {
           return handleExistingUser(formData);
         }
         throw authError;
       }
-  
-      if (!authData.user) throw new Error('Failed to create user');
-      
+
+      if (!authData.user) throw new Error("Failed to create user");
+
       // CAMBIO IMPORTANTE: Insertar el registro en la tabla User inmediatamente después del registro
       // sin esperar por la sesión
-      const { error: userError } = await supabase
-        .from('User')
-        .insert({
-          id: authData.user.id,
-          email: formData.email,
-          name: formData.name,
-          last_name: formData.last_name,
-          user_name: formData.user_name,
-          user_icon: null, // Dejamos la imagen como null por ahora
-          phone_number: formData.phone_number,
-          age: formData.age,
-          interests: formData.interests ? formData.interests.split(',').map(i => i.trim()) : [],
-        });
-      
+      const { error: userError } = await supabase.from("User").insert({
+        id: authData.user.id,
+        email: formData.email,
+        name: formData.name,
+        last_name: formData.last_name,
+        user_name: formData.user_name,
+        user_icon: null, // Dejamos la imagen como null por ahora
+        phone_number: formData.phone_number,
+        age: formData.age,
+        interests: formData.interests
+          ? formData.interests.split(",").map((i) => i.trim())
+          : [],
+      });
+
       if (userError) {
-        console.error('Error creating user record:', userError);
+        console.error("Error creating user record:", userError);
         throw new Error(`Failed to create user record: ${userError.message}`);
       }
-  
+
       // El correo ya se ha enviado automáticamente por Supabase Auth
       setEmailSent(true);
-      
     } catch (error) {
-      console.error('Error:', error);
+      console.error("Error:", error);
       Alert.alert(
-        'Error',
-        error instanceof Error ? error.message : 'Registration error'
+        "Error",
+        error instanceof Error ? error.message : "Registration error"
       );
     } finally {
       setLoading(false);
     }
   };
-  
+
   const handleExistingUser = async (formData: RegisterFormData) => {
     try {
-      const { data: { user }, error: signInError } = await supabase.auth.signInWithPassword({
+      const {
+        data: { user },
+        error: signInError,
+      } = await supabase.auth.signInWithPassword({
         email: formData.email,
-        password: formData.password
+        password: formData.password,
       });
-  
+
       if (signInError) throw signInError;
-      if (!user) throw new Error('User not found');
-  
+      if (!user) throw new Error("User not found");
+
       const updates = {
         name: formData.name,
         last_name: formData.last_name,
@@ -223,10 +222,12 @@ export default function RegisterForm() {
         user_icon: formData.user_icon,
         phone_number: formData.phone_number,
         age: formData.age,
-        interests: formData.interests ? formData.interests.split(',').map(i => i.trim()) : [],
-        updated_at: new Date().toISOString()
+        interests: formData.interests
+          ? formData.interests.split(",").map((i) => i.trim())
+          : [],
+        updated_at: new Date().toISOString(),
       };
-  
+
       if (imageUri) {
         try {
           updates.user_icon = await uploadImage(imageUri, user.id);
@@ -234,16 +235,17 @@ export default function RegisterForm() {
           console.warn("Image upload failed:", uploadError);
         }
       }
-  
+
       const { error: updateError } = await supabase
-        .from('User')
+        .from("User")
         .update(updates)
-        .eq('id', user.id);
-  
+        .eq("id", user.id);
+
       if (updateError) throw updateError;
-      
     } catch (error) {
-      throw new Error(error instanceof Error ? error.message : 'Error updating user');
+      throw new Error(
+        error instanceof Error ? error.message : "Error updating user"
+      );
     }
   };
 
@@ -252,15 +254,15 @@ export default function RegisterForm() {
       <View style={styles.container}>
         <Text style={styles.title}>Verify your email</Text>
         <Text style={styles.message}>
-          We've sent a confirmation link to your email address.
-          Please check your inbox and click the link to activate your account.
+          We've sent a confirmation link to your email address. Please check
+          your inbox and click the link to activate your account.
         </Text>
       </View>
     );
   }
 
   return (
-    <ScrollView 
+    <ScrollView
       contentContainerStyle={styles.container}
       keyboardShouldPersistTaps="handled"
     >
@@ -281,7 +283,9 @@ export default function RegisterForm() {
             />
           )}
         />
-        {errors.email && <Text style={styles.errorText}>{errors.email.message}</Text>}
+        {errors.email && (
+          <Text style={styles.errorText}>{errors.email.message}</Text>
+        )}
       </View>
 
       <View style={styles.inputGroup}>
@@ -300,7 +304,9 @@ export default function RegisterForm() {
             />
           )}
         />
-        {errors.password && <Text style={styles.errorText}>{errors.password.message}</Text>}
+        {errors.password && (
+          <Text style={styles.errorText}>{errors.password.message}</Text>
+        )}
       </View>
 
       <View style={styles.inputGroup}>
@@ -318,7 +324,9 @@ export default function RegisterForm() {
             />
           )}
         />
-        {errors.name && <Text style={styles.errorText}>{errors.name.message}</Text>}
+        {errors.name && (
+          <Text style={styles.errorText}>{errors.name.message}</Text>
+        )}
       </View>
 
       <View style={styles.inputGroup}>
@@ -336,7 +344,9 @@ export default function RegisterForm() {
             />
           )}
         />
-        {errors.last_name && <Text style={styles.errorText}>{errors.last_name.message}</Text>}
+        {errors.last_name && (
+          <Text style={styles.errorText}>{errors.last_name.message}</Text>
+        )}
       </View>
 
       <View style={styles.inputGroup}>
@@ -355,11 +365,13 @@ export default function RegisterForm() {
             />
           )}
         />
-        {errors.user_name && <Text style={styles.errorText}>{errors.user_name.message}</Text>}
+        {errors.user_name && (
+          <Text style={styles.errorText}>{errors.user_name.message}</Text>
+        )}
       </View>
 
       <View style={styles.inputGroup}>
-        <Text style={styles.label}>Phone</Text>
+        <Text style={styles.label}>Phone*</Text>
         <Controller
           control={control}
           name="phone_number"
@@ -374,7 +386,9 @@ export default function RegisterForm() {
             />
           )}
         />
-        {errors.phone_number && <Text style={styles.errorText}>{errors.phone_number.message}</Text>}
+        {errors.phone_number && (
+          <Text style={styles.errorText}>{errors.phone_number.message}</Text>
+        )}
       </View>
 
       <View style={styles.inputGroup}>
@@ -393,27 +407,29 @@ export default function RegisterForm() {
             />
           )}
         />
-        {errors.age && <Text style={styles.errorText}>{errors.age.message}</Text>}
+        {errors.age && (
+          <Text style={styles.errorText}>{errors.age.message}</Text>
+        )}
       </View>
 
       <View style={styles.inputGroup}>
-  <Text style={styles.label}>Interests</Text>
-  <Controller
-    control={control}
-    name="interests"
-    render={({ field: { onBlur } }) => (
-      <TextInput
-        style={[styles.input, styles.multilineInput]}
-        placeholder="Separate with commas (e.g. reading, sports, music)"
-        value={interestsText}
-        onBlur={onBlur}
-        onChangeText={handleInterestsChange}
-        multiline
-        textAlignVertical="top"
-      />
-    )}
-  />
-</View>
+        <Text style={styles.label}>Interests</Text>
+        <Controller
+          control={control}
+          name="interests"
+          render={({ field: { onBlur } }) => (
+            <TextInput
+              style={[styles.input, styles.multilineInput]}
+              placeholder="Separate with commas (e.g. reading, sports, music)"
+              value={interestsText}
+              onBlur={onBlur}
+              onChangeText={handleInterestsChange}
+              multiline
+              textAlignVertical="top"
+            />
+          )}
+        />
+      </View>
 
       <View style={styles.submitButton}>
         {loading ? (
@@ -442,36 +458,36 @@ const styles = StyleSheet.create({
   label: {
     marginBottom: 4,
     fontSize: 14,
-    color: '#444',
-    fontFamily: FONTS.medium
+    color: "#444",
+    fontFamily: FONTS.medium,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: "#ddd",
     borderRadius: 6,
     padding: 10,
     fontSize: 14,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     fontFamily: FONTS.medium,
     height: 40,
   },
   errorText: {
-    color: '#dc2626',
+    color: "#dc2626",
     marginTop: 4,
     fontSize: 12,
-    fontFamily: FONTS.medium
+    fontFamily: FONTS.medium,
   },
   submitButton: {
     marginTop: 15,
     borderRadius: 6,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   title: {
     fontSize: 18,
     fontWeight: "bold",
     marginBottom: 15,
     textAlign: "center",
-    fontFamily: FONTS.semiBold
+    fontFamily: FONTS.semiBold,
   },
   message: {
     textAlign: "center",
@@ -481,7 +497,7 @@ const styles = StyleSheet.create({
   },
   multilineInput: {
     height: 80,
-    textAlignVertical: 'top',
-    paddingTop: 10
+    textAlignVertical: "top",
+    paddingTop: 10,
   },
 });

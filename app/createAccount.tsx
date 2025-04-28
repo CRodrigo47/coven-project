@@ -1,9 +1,7 @@
-import { Button, Text, View } from "react-native";
-import { useRouter } from "expo-router";
+import { View } from "react-native";
 import RegisterForm from "@/components/sign-upForm";
 
 export default function CreateAccount() {
-  const router = useRouter();
 
 
   return (

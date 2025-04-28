@@ -1,10 +1,8 @@
 import AuthProvider from "@/providers/AuthProvider";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function RootLayout() {
-  const insets = useSafeAreaInsets();
 
   return (
     <>

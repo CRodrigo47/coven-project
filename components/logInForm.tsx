@@ -22,20 +22,23 @@ export default function LoginForm() {
   const handleLogin = async () => {
     try {
       setLoading(true);
-      const { error } = await supabase.auth.signInWithPassword({
+      
+      // Limpiar cualquier sesión existente primero
+      await supabase.auth.signOut();
+      
+      // Intentar iniciar sesión
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
   
       if (error) throw error;
-  
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      const { data: { session } } = await supabase.auth.getSession();
       
-      if (session) {
+      // No necesitas esperar artificialmente ni volver a comprobar la sesión
+      if (data.session) {
         router.replace('/mainTabs/gatheringTabs');
       } else {
-        throw new Error('Session not found after login');
+        throw new Error('No se pudo obtener la sesión después del inicio de sesión');
       }
     } catch (error) {
       Alert.alert("Error", error.message);

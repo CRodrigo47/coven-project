@@ -1,5 +1,5 @@
 import CreateGatheringForm from "@/components/GatheringComponents/CreateGatheringForm";
-import { Text, View } from "react-native";
+import {  View } from "react-native";
 
 export default function CreateGathering() {
   return (

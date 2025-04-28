@@ -8,10 +8,10 @@ import { COLORS } from "@/constants/COLORS";
 import { getTypography } from "@/constants/TYPOGRAPHY";
 import UserListItem from "@/components/UserListItem";
 
-export default function BlockList() {
+export default function FriendsList() {
   const router = useRouter();
   const pathname = usePathname();
-  const [blockedUsers, setBlockedUsers] = useState<UserInterface[]>([]);
+  const [friends, setFriends] = useState<UserInterface[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -19,15 +19,15 @@ export default function BlockList() {
   const authUserId = useGlobalStore((state: any) => state.authUserId);
   const fetchAuthUserId = useGlobalStore((state: any) => state.fetchAuthUserId);
 
-  // Obtener el ID del usuario autenticado cuando el componente se monta
+
   useEffect(() => {
     if (!authUserId) {
       fetchAuthUserId();
     }
   }, [authUserId, fetchAuthUserId]);
 
-  const fetchBlockedUsers = useCallback(async () => {
-    // Si no tenemos el ID del usuario autenticado, intentamos obtenerlo
+  const fetchFriends = useCallback(async () => {
+ 
     let currentUserId = authUserId;
     if (!currentUserId) {
       currentUserId = await fetchAuthUserId();
@@ -42,32 +42,32 @@ export default function BlockList() {
     setError(null);
     
     try {
-      // Obtener IDs de usuarios bloqueados de la tabla _Block-list_
-      const { data: blockRelations, error: blocksError } = await supabase
-        .from("_Block-list_")
-        .select("block_id")
+
+      const { data: friendRelations, error: friendsError } = await supabase
+        .from("_Friend-list_")
+        .select("friend_id")
         .eq("user_id", currentUserId);
 
-      if (blocksError) throw blocksError;
+      if (friendsError) throw friendsError;
 
-      if (blockRelations && blockRelations.length > 0) {
-        const blockedIds = blockRelations.map(relation => relation.block_id);
+      if (friendRelations && friendRelations.length > 0) {
+        const friendIds = friendRelations.map(relation => relation.friend_id);
         
-        // Obtener datos completos de los usuarios bloqueados
-        const { data: blockedData, error: usersError } = await supabase
+ 
+        const { data: friendsData, error: usersError } = await supabase
           .from("User")
           .select("*")
-          .in("id", blockedIds);
+          .in("id", friendIds);
           
         if (usersError) throw usersError;
         
-        setBlockedUsers(blockedData as UserInterface[]);
+        setFriends(friendsData as UserInterface[]);
       } else {
-        setBlockedUsers([]);
+        setFriends([]);
       }
     } catch (err: any) {
-      console.error("Error fetching blocked users:", err);
-      setError(err.message || "Failed to load blocked users");
+      console.error("Error fetching friends:", err);
+      setError(err.message || "Failed to load friends");
     } finally {
       setIsLoading(false);
     }
@@ -75,8 +75,8 @@ export default function BlockList() {
 
   useFocusEffect(
     useCallback(() => {
-      fetchBlockedUsers();
-    }, [fetchBlockedUsers])
+      fetchFriends();
+    }, [fetchFriends])
   );
 
   const handleUserSelect = (user: UserInterface) => {
@@ -108,9 +108,9 @@ export default function BlockList() {
 
   return (
     <View style={styles.container}>
-      {blockedUsers.length > 0 ? (
+      {friends.length > 0 ? (
         <FlatList
-          data={blockedUsers}
+          data={friends}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <UserListItem user={item} onPress={handleUserSelect} />
@@ -121,7 +121,7 @@ export default function BlockList() {
       ) : (
         <View style={styles.emptyContainer}>
           <Text style={[getTypography("bodyLarge", "light"), styles.emptyText]}>
-            You have no users blocked
+            You have no friends in your friend list
           </Text>
         </View>
       )}
@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   emptyText: {
-    textAlign: "center"
+    textAlign: "center",
   },
   errorText: {
     textAlign: "center",

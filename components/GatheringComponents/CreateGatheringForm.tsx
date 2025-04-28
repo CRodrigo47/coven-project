@@ -19,7 +19,7 @@ import * as Location from "expo-location";
 import MapView, { LatLng, Marker, Region } from "react-native-maps";
 import { COLORS } from "@/constants/COLORS";
 import { FONTS } from "@/constants/FONTS";
-import { useRouter } from "expo-router";
+import { usePathname, useRouter } from "expo-router";
 
 const gatheringSchema = yup.object({
   name: yup.string().required("Gathering name is required"),
@@ -48,7 +48,7 @@ type GatheringFormData = yup.InferType<typeof gatheringSchema>;
 
 export default function CreateGatheringForm() {
   const router = useRouter();
-  const [userId, setUserId] = useState<string | null>(null);
+  const pathname = usePathname();
   const selectedCoven = useGlobalStore((state: any) => state.selectedCoven);
   const selectedGathering = useGlobalStore(
     (state: any) => state.selectedGathering
@@ -71,6 +71,15 @@ export default function CreateGatheringForm() {
   const [isUpdateMode, setIsUpdateMode] = useState(false);
   const [covenId, setCovenId] = useState<string | null>(null);
   const [deletingGathering, setDeletingGathering] = useState(false);
+  const authUserId = useGlobalStore((state: any) => state.authUserId);
+  const fetchAuthUserId = useGlobalStore((state: any) => state.fetchAuthUserId);
+
+
+  useEffect(() => {
+    if (!authUserId) {
+      fetchAuthUserId();
+    }
+  }, [authUserId, fetchAuthUserId]);
 
   // Determine if we're in update mode
   useEffect(() => {
@@ -154,19 +163,6 @@ export default function CreateGatheringForm() {
     })();
   }, [selectedGathering]);
 
-  useEffect(() => {
-    const fetchUserId = async () => {
-      try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (user) setUserId(user.id);
-      } catch (err) {
-        console.error("Error getting user ID:", err);
-      }
-    };
-    fetchUserId();
-  }, []);
 
   const {
     control,
@@ -251,7 +247,7 @@ export default function CreateGatheringForm() {
 
   const onSubmit: SubmitHandler<GatheringFormData> = async (formData) => {
     try {
-      if (!userId) throw new Error("Could not get user ID");
+      if (!authUserId) throw new Error("Could not get user ID");
       if (!coordinates) throw new Error("Location not selected");
       if (!covenId) throw new Error("No coven selected");
 
@@ -293,7 +289,7 @@ export default function CreateGatheringForm() {
             {
               ...gatheringData,
               created_at: new Date().toISOString(),
-              created_by: userId,
+              created_by: authUserId,
             },
           ])
           .select()
@@ -311,7 +307,12 @@ export default function CreateGatheringForm() {
       if (!data) throw new Error("No data returned from operation");
 
       setSelectedGathering(data);
-      router.push("/mainTabs/covenTabs/gatheringDetail");
+      
+      if (pathname.includes("/mainTabs/gatheringTabs")){
+        router.push("/mainTabs/gatheringTabs/gatheringDetail")
+      }else{
+        router.push("/mainTabs/covenTabs/gatheringDetail");
+      }
     } catch (error: any) {
       Alert.alert("Error", error.message || "Failed to save gathering");
       console.error("Error:", error);

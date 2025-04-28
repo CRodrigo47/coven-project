@@ -23,7 +23,15 @@ export default function GuestItem({ item, onGuestUpdate }: {
     
     // State for current user
     const [isCurrentUser, setIsCurrentUser] = useState(false);
-    const [userId, setUserId] = useState<string | null>(null);
+    const authUserId = useGlobalStore((state: any) => state.authUserId);
+    const fetchAuthUserId = useGlobalStore((state: any) => state.fetchAuthUserId);
+  
+  
+    useEffect(() => {
+      if (!authUserId) {
+        fetchAuthUserId();
+      }
+    }, [authUserId, fetchAuthUserId]);
     
     // State for expense management
     const [newExpenseAmount, setNewExpenseAmount] = useState("");
@@ -45,14 +53,12 @@ export default function GuestItem({ item, onGuestUpdate }: {
             try {
                 const { data: { user } } = await supabase.auth.getUser();
                 if (user) {
-                    setUserId(user.id);
                     setIsCurrentUser(user.id === item.user_id);
                 }
             } catch (error) {
                 console.error("Error fetching current user:", error);
             }
         };
-        
         fetchCurrentUser();
     }, [item.user_id]);
 
@@ -135,13 +141,13 @@ export default function GuestItem({ item, onGuestUpdate }: {
     
     // Handle saving remarks
     const saveRemarks = async () => {
-        if (!isCurrentUser || !userId) return;
+        if (!isCurrentUser || !authUserId) return;
         
         try {
             const { error } = await supabase
                 .from("Guest")
                 .update({ remarks: userRemarks })
-                .eq("user_id", userId)
+                .eq("user_id", authUserId)
                 .eq("gathering_id", selectedGathering.id);
                 
             if (error) throw error;
@@ -155,7 +161,7 @@ export default function GuestItem({ item, onGuestUpdate }: {
     
     // Handle adding expense and distributing it
     const handleAddExpense = async () => {
-        if (!isCurrentUser || !userId || !newExpenseAmount) return;
+        if (!isCurrentUser || !authUserId || !newExpenseAmount) return;
         
         const amount = parseFloat(newExpenseAmount);
         if (isNaN(amount) || amount <= 0) {
@@ -184,7 +190,7 @@ export default function GuestItem({ item, onGuestUpdate }: {
                 .update({ 
                     expenses: newExpenseValue 
                 })
-                .eq("user_id", userId)
+                .eq("user_id", authUserId)
                 .eq("gathering_id", selectedGathering.id);
                 
             if (currentUserError) throw currentUserError;
@@ -194,7 +200,7 @@ export default function GuestItem({ item, onGuestUpdate }: {
                 if (selectedGuests[guestId]) {
                     const targetGuest = guestList.find(g => g.user_id === guestId);
                     
-                    if (guestId !== userId) { // Skip the current user as we've already updated them
+                    if (guestId !== authUserId) { // Skip the current user as we've already updated them
                         const { error: guestError } = await supabase
                             .from("Guest")
                             .update({ 
@@ -229,7 +235,7 @@ export default function GuestItem({ item, onGuestUpdate }: {
     
     // Handle changing arrival status
     const updateArrivingStatus = async (status: string) => {
-        if (!isCurrentUser || !userId) return;
+        if (!isCurrentUser || !authUserId) return;
         
         try {
             // Update local state first for immediate UI update
@@ -238,7 +244,7 @@ export default function GuestItem({ item, onGuestUpdate }: {
             const { error } = await supabase
                 .from("Guest")
                 .update({ arriving_status: status })
-                .eq("user_id", userId)
+                .eq("user_id", authUserId)
                 .eq("gathering_id", selectedGathering.id);
                 
             if (error) throw error;

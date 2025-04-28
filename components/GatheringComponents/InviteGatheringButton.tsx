@@ -18,10 +18,10 @@ const styles = StyleSheet.create({
     buttonBox: {
         position: "absolute",
         bottom: 20,
-        right: 15,
+        right: 30,
         borderWidth: 1,
         borderRadius: 15,
-        width: 130,
+        width: 80,
         backgroundColor: COLORS.secondary
     }
 })

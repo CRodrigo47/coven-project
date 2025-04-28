@@ -8,22 +8,18 @@ import useGlobalStore from "@/context/useStore";
 export default function CreateGatheringButton() {
     const router = useRouter();
     const selectedGathering = useGlobalStore((state: any) => state.selectedGathering);
-    const [userId, setUserId] = useState<string | null>(null);
     const pathname = usePathname()
-
+    const authUserId = useGlobalStore((state: any) => state.authUserId);
+    const fetchAuthUserId = useGlobalStore((state: any) => state.fetchAuthUserId);
+  
+  
     useEffect(() => {
-        const fetchUserId = async () => {
-            try {
-                const {
-                    data: { user },
-                } = await supabase.auth.getUser();
-                if (user) setUserId(user.id);
-            } catch (err) {
-                console.error("Error getting user ID:", err);
-            }
-        };
-        fetchUserId();
-    }, []);
+      if (!authUserId) {
+        fetchAuthUserId();
+      }
+    }, [authUserId, fetchAuthUserId]);
+
+
 
     const moveToCreate = () => {
         if(pathname.includes("/mainTabs/covenTabs")){
@@ -33,11 +29,11 @@ export default function CreateGatheringButton() {
         }
     }
 
-    if (selectedGathering && selectedGathering.created_by !== userId) {
+    if (selectedGathering && selectedGathering.created_by !== authUserId) {
         return null;
     }
 
-    const isEditing = selectedGathering && selectedGathering.created_by === userId;
+    const isEditing = selectedGathering && selectedGathering.created_by === authUserId;
     const buttonText = isEditing ? "Edit Gathering" : "Create Gathering";
 
     return (
@@ -62,7 +58,7 @@ const styles = StyleSheet.create({
     buttonBox: {
         borderWidth: 1,
         borderRadius: 15,
-        width: 130,
+        width: 80,
         backgroundColor: COLORS.secondary,
     },
 });

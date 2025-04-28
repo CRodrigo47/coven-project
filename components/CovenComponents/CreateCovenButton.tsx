@@ -9,35 +9,30 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 export default function CreateCovenButton() {
     const router = useRouter();
     const pathname = usePathname();
-    const [userId, setUserId] = useState<string | null>(null);
     const [isOwner, setIsOwner] = useState(false);
     const selectedCoven = useGlobalStore((state: any) => state.selectedCoven);
+    const authUserId = useGlobalStore((state: any) => state.authUserId);
+    const fetchAuthUserId = useGlobalStore((state: any) => state.fetchAuthUserId);
+  
+  
+    useEffect(() => {
+      if (!authUserId) {
+        fetchAuthUserId();
+      }
+    }, [authUserId, fetchAuthUserId]);
     
     const isDetailPage = pathname === "/mainTabs/covenTabs/covenDetail";
     const buttonText = isDetailPage ? "Update Coven" : "Create Coven";
 
-    useEffect(() => {
-        const fetchUserId = async () => {
-            try {
-                const {
-                    data: { user },
-                } = await supabase.auth.getUser();
-                if (user) setUserId(user.id);
-            } catch (err) {
-                console.error("Error getting user ID:", err);
-            }
-        };
-        fetchUserId();
-    }, []);
 
     useEffect(() => {
-        if (isDetailPage && selectedCoven && userId) {
-            setIsOwner(selectedCoven.created_by === userId);
+        if (isDetailPage && selectedCoven && authUserId) {
+            setIsOwner(selectedCoven.created_by === authUserId);
         } else if (!isDetailPage) {
             // Always show create button on non-detail pages
             setIsOwner(true);
         }
-    }, [isDetailPage, selectedCoven, userId]);
+    }, [isDetailPage, selectedCoven, authUserId]);
 
     if (isDetailPage && !isOwner) {
         return null;
@@ -78,13 +73,13 @@ const styles = StyleSheet.create({
     },
     updateContainer: {
         alignItems: "flex-start",
-        paddingLeft: 10,
+        paddingLeft: 30,
         right: 'auto'
     },
     buttonBox: {
         borderWidth: 1,
         borderRadius: 15,
-        width: 130,
+        width: 80,
         backgroundColor: COLORS.secondary
     },
 });

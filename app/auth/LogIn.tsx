@@ -25,10 +25,10 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     backgroundColor: "#fcf5d7",
-    paddingTop: 120,
+    paddingTop: 100,
   },
   logoContainer: {
-    marginBottom: 40,
+    marginBottom: 70,
   },
   footerText: {
     ...getTypography("bodyMedium", "light"),

@@ -4,6 +4,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native"; // Ajus
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase"; // Ajusta la ruta según tu estructura
 import useGlobalStore from "@/context/useStore";
+import { getTypography } from "@/constants/TYPOGRAPHY";
 
 export default function CreateGatheringButton() {
     const router = useRouter();
@@ -40,7 +41,7 @@ export default function CreateGatheringButton() {
         <View style={styles.container}>
             <TouchableOpacity onPress={() => moveToCreate()}>
                 <View style={styles.buttonBox}>
-                    <Text className="text-center p-2">{buttonText}</Text>
+                    <Text className="text-center p-2" style={getTypography("labelLarge", "light")}>{buttonText}</Text>
                 </View>
             </TouchableOpacity>
         </View>
@@ -58,7 +59,7 @@ const styles = StyleSheet.create({
     buttonBox: {
         borderWidth: 1,
         borderRadius: 15,
-        width: 80,
+        width: 90,
         backgroundColor: COLORS.secondary,
     },
 });

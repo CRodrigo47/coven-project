@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
     buttonBox: {
         borderWidth: 1,
         borderRadius: 15,
-        width: 80,
+        width: 90,
         backgroundColor: COLORS.secondary
     },
 });

@@ -8,12 +8,22 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import AddFriendButton from "@/components/AddFriendButton";
 import BlockUserButton from "@/components/BlockUserButton";
+import { useEffect } from "react";
 
 const ProfileViewer = () => {
   const selectedUser = useGlobalStore((state: any) => state.selectedUser);
+  const authUserId = useGlobalStore((state: any) => state.authUserId);
+  const fetchAuthUserId = useGlobalStore((state: any) => state.fetchAuthUserId);
   const insets = useSafeAreaInsets();
   const headerHeight = 60 + insets.top;
 
+  useEffect(() => {
+    if (!authUserId) {
+      fetchAuthUserId();
+    }
+  }, [authUserId, fetchAuthUserId]);
+
+  const isOwnProfile = selectedUser.id === authUserId;
 
   const formatRegistrationDate = (timestamptz: string) => {
     if (!timestamptz) return "Unknown";
@@ -90,12 +100,13 @@ const ProfileViewer = () => {
             )}
           </View>
 
-          <View style={styles.buttonContainer}>
-            <AddFriendButton />
-            <BlockUserButton />
-          </View>
+          {!isOwnProfile && (
+            <View style={styles.buttonContainer}>
+              <AddFriendButton />
+              <BlockUserButton />
+            </View>
+          )}
           
-
           <View style={styles.createdAtSection}>
           <Text style={styles.registrationDate}>
               Member since
@@ -104,8 +115,6 @@ const ProfileViewer = () => {
               {formatRegistrationDate(selectedUser.created_at)}
             </Text>
           </View>
-
-         
         </View>
       </ScrollView>
     </>

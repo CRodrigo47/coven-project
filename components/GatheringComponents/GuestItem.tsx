@@ -139,6 +139,14 @@ export default function GuestItem({ item, onGuestUpdate }: {
         }
     };
     
+    // Format the expenses with the appropriate sign
+    const formatExpenses = (value: number | null | undefined) => {
+        if (value === null || value === undefined) return '0€';
+        
+        // Format with the appropriate sign
+        return `${value > 0 ? '+' : ''}${value}€`;
+    };
+    
     // Handle saving remarks
     const saveRemarks = async () => {
         if (!isCurrentUser || !authUserId) return;
@@ -169,22 +177,57 @@ export default function GuestItem({ item, onGuestUpdate }: {
             return;
         }
         
-        // Get count of selected users
-        const selectedCount = Object.values(selectedGuests).filter(Boolean).length;
-        if (selectedCount === 0) {
+        // Get list of selected users (the ones who consumed)
+        const selectedUserIds = Object.keys(selectedGuests).filter(userId => selectedGuests[userId]);
+        
+        // Check if at least one user is selected
+        if (selectedUserIds.length === 0) {
             Alert.alert("No Users Selected", "Please select at least one user to share the expense");
             return;
         }
         
         // Calculate share per person
-        const sharePerPerson = amount / selectedCount;
+        const sharePerPerson = amount / selectedUserIds.length;
         
         try {
-            // Update local expense value first for immediate UI feedback
-            const newExpenseValue = (localExpense || 0) + amount;
+            // First, check if the current user is among the consumers
+            const currentUserIsConsumer = selectedGuests[authUserId] || false;
+            
+            // Update database for all selected users (they get negative values)
+            for (const userId of selectedUserIds) {
+                // Skip the current user as we'll handle them separately
+                if (userId === authUserId && currentUserIsConsumer) continue;
+                
+                const targetGuest = guestList.find(g => g.user_id === userId);
+                
+                const { error } = await supabase
+                    .from("Guest")
+                    .update({ 
+                        expenses: (targetGuest?.expenses || 0) - sharePerPerson 
+                    })
+                    .eq("user_id", userId)
+                    .eq("gathering_id", selectedGathering.id);
+                    
+                if (error) {
+                    console.error(`Error updating guest ${userId}:`, error);
+                    throw error;
+                }
+            }
+            
+            // Calculate the new expense for the payer:
+            // If they also consumed, they pay the total minus their own share
+            let newExpenseValue;
+            if (currentUserIsConsumer) {
+                // They paid the bill but also consumed, so they get: 
+                // amount (what they paid) - sharePerPerson (what they consumed)
+                newExpenseValue = (localExpense || 0) + amount - sharePerPerson;
+            } else {
+                // They just paid and didn't consume, so they get the full amount
+                newExpenseValue = (localExpense || 0) + amount;
+            }
+            
             setLocalExpense(newExpenseValue);
             
-            // First, update the expense for the current user (positive value)
             const { error: currentUserError } = await supabase
                 .from("Guest")
                 .update({ 
@@ -194,27 +237,6 @@ export default function GuestItem({ item, onGuestUpdate }: {
                 .eq("gathering_id", selectedGathering.id);
                 
             if (currentUserError) throw currentUserError;
-            
-            // Then, update expenses for all selected guests (negative value)
-            for (const guestId in selectedGuests) {
-                if (selectedGuests[guestId]) {
-                    const targetGuest = guestList.find(g => g.user_id === guestId);
-                    
-                    if (guestId !== authUserId) { // Skip the current user as we've already updated them
-                        const { error: guestError } = await supabase
-                            .from("Guest")
-                            .update({ 
-                                expenses: (targetGuest?.expenses || 0) - sharePerPerson 
-                            })
-                            .eq("user_id", guestId)
-                            .eq("gathering_id", selectedGathering.id);
-                            
-                        if (guestError) {
-                            console.error(`Error updating guest ${guestId}:`, guestError);
-                        }
-                    }
-                }
-            }
             
             setExpenseModalVisible(false);
             setNewExpenseAmount("");
@@ -281,21 +303,14 @@ export default function GuestItem({ item, onGuestUpdate }: {
                     style={styles.expensesContainer}
                     onPress={() => isCurrentUser && setExpenseModalVisible(true)}
                 >
-                    {localExpense ? (
-                        <Text style={[
-                            styles.expenses,
-                            isCurrentUser && styles.currentUserText
-                        ]}>
-                            {localExpense}€
-                        </Text>
-                    ) : (
-                        <Text style={[
-                            styles.noExpenses,
-                            isCurrentUser && styles.currentUserText
-                        ]}>
-                            0€
-                        </Text>
-                    )}
+                    <Text style={[
+                        styles.expenses,
+                        isCurrentUser && styles.currentUserText,
+                        (localExpense || 0) > 0 && styles.positiveExpense,
+                        (localExpense || 0) < 0 && styles.negativeExpense
+                    ]}>
+                        {formatExpenses(localExpense)}
+                    </Text>
                 </TouchableOpacity>
                 
                 <TouchableOpacity 
@@ -321,7 +336,6 @@ export default function GuestItem({ item, onGuestUpdate }: {
                 </TouchableOpacity>
             </TouchableOpacity>
 
-            {/* Modals remain the same */}
             {/* Remarks Modal */}
             <Modal
                 animationType="fade"
@@ -402,7 +416,7 @@ export default function GuestItem({ item, onGuestUpdate }: {
                             onChangeText={setNewExpenseAmount}
                         />
                         
-                        <Text style={styles.sectionTitle}>Split with:</Text>
+                        <Text style={styles.sectionTitle}>Who consumed:</Text>
                         
                         <ScrollView style={styles.guestSelectionList}>
                             {guestList.map((guest) => (
@@ -542,6 +556,12 @@ const styles = StyleSheet.create({
     expenses: {
         fontFamily: FONTS.regular,
         fontSize: 15,
+    },
+    positiveExpense: {
+        color: COLORS.success,
+    },
+    negativeExpense: {
+        color: COLORS.danger,
     },
     noExpenses: {
         fontFamily: FONTS.regular,

@@ -319,7 +319,9 @@ const styles = StyleSheet.create({
     marginTop: 10,
     minWidth: 100,
     alignItems: "center",
+    color: "white"
   },
   closeButtonText: {
+    color: "white"
   },
 });

@@ -4,7 +4,7 @@ import useGlobalStore from "@/context/useStore";
 import { supabase } from "@/lib/supabase";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { FlatList, Text, View, StyleSheet, ScrollView } from "react-native";
+import { Text, View, StyleSheet, ScrollView } from "react-native";
 import { COLORS } from "@/constants/COLORS";
 import { FONTS } from "@/constants/FONTS";
 import MapView, { Marker } from "react-native-maps";
@@ -39,7 +39,7 @@ export default function GatheringDetail() {
   );
   const [guestList, setGuestList] = useState<GuestWithUserIcon[]>([]);
 
-  // Function to refresh guest list
+
   const refreshGuestList = async () => {
     if (!selectedGathering?.id) return;
 
@@ -71,7 +71,7 @@ export default function GatheringDetail() {
     return timeString.substring(0, 5);
   };
 
-  // Check if we have valid coordinates to display the map
+
   const hasValidCoordinates =
     selectedGathering?.latitude != null && selectedGathering?.longitude != null;
 
@@ -157,7 +157,7 @@ export default function GatheringDetail() {
             {selectedGathering?.description || "No description provided"}
           </Text>
 
-          {/* Pass callback function to refresh guest list */}
+
           <JoinGatheringButton onGuestStatusChange={refreshGuestList} />
         </View>
 
@@ -169,7 +169,7 @@ export default function GatheringDetail() {
               <GuestItem
                 key={item.user_id}
                 item={item}
-                onGuestUpdate={refreshGuestList} // Pasamos la función de actualización a cada GuestItem
+                onGuestUpdate={refreshGuestList}
               />
             ))
           ) : (

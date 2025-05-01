@@ -292,6 +292,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.secondary,
     padding: 8,
     marginVertical: 5,
+    marginTop: 20
   },
   joinButtonText: {
     textAlign: "center",

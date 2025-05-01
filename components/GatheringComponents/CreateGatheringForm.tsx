@@ -21,13 +21,41 @@ import { COLORS } from "@/constants/COLORS";
 import { FONTS } from "@/constants/FONTS";
 import { usePathname, useRouter } from "expo-router";
 
+// Función auxiliar para convertir fecha de formato DD-MM-YYYY a formato YYYY-MM-DD
+const convertToISODate = (spanishDate) => {
+  if (!spanishDate || spanishDate.trim() === '') return null;
+  
+  const parts = spanishDate.split('-');
+  if (parts.length !== 3) return null;
+  
+  const day = parts[0].padStart(2, '0');
+  const month = parts[1].padStart(2, '0');
+  const year = parts[2];
+  
+  return `${year}-${month}-${day}`;
+};
+
+// Función auxiliar para convertir fecha de formato YYYY-MM-DD a formato DD-MM-YYYY
+const convertToSpanishFormat = (isoDate) => {
+  if (!isoDate) return '';
+  
+  const date = new Date(isoDate);
+  if (isNaN(date.getTime())) return '';
+  
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  
+  return `${day}-${month}-${year}`;
+};
+
 const gatheringSchema = yup.object({
   name: yup.string().required("Gathering name is required"),
   location_name: yup.string().required("Location name is required"),
   date: yup
     .date()
     .required("Date is required")
-    .typeError("Please enter a valid date in YYYY-MM-DD format"),
+    .typeError("Please enter a valid date in DD-MM-YYYY format"),
   time: yup
   .string()
   .matches(
@@ -193,8 +221,10 @@ export default function CreateGatheringForm() {
     if (selectedGathering) {
       // Format date from ISO string to Date object
       const gatheringDate = new Date(selectedGathering.date);
-      const dateString = gatheringDate.toISOString().split("T")[0]; // YYYY-MM-DD
-      setDateInput(dateString);
+      
+      // Convertir a formato español DD-MM-AAAA
+      const spanishDateFormat = convertToSpanishFormat(selectedGathering.date);
+      setDateInput(spanishDateFormat);
 
       // Extract time from the timestamp or use the time field if available
       let timeString = selectedGathering.time;
@@ -459,26 +489,29 @@ export default function CreateGatheringForm() {
       </View>
 
       <View style={styles.inputGroup}>
-        <Text style={styles.label}>Date* (YYYY-MM-DD)</Text>
+        <Text style={styles.label}>Date* (DD-MM-YYYY)</Text>
         <Controller
           control={control}
           name="date"
           render={({ field: { onChange, onBlur, value } }) => (
             <TextInput
               style={styles.input}
-              placeholder="YYYY-MM-DD"
+              placeholder="DD-MM-YYYY"
               value={dateInput}
               onChangeText={(text) => {
                 setDateInput(text);
-                // Basic auto-formatting
-                if (text.length === 4 && !text.includes("-")) {
+                // Auto-formato para estilo español DD-MM-AAAA
+                if (text.length === 2 && !text.includes("-")) {
                   setDateInput(text + "-");
-                } else if (text.length === 7 && text.split("-").length === 2) {
+                } else if (text.length === 5 && text.split("-").length === 2) {
                   setDateInput(text + "-");
                 }
               }}
               onBlur={() => {
-                const date = new Date(dateInput);
+                // Convertir del formato español al formato ISO para la validación
+                const isoDate = convertToISODate(dateInput);
+                const date = isoDate ? new Date(isoDate) : new Date("invalid");
+                
                 if (!isNaN(date.getTime())) {
                   setValue("date", date, { shouldValidate: true });
                 } else {

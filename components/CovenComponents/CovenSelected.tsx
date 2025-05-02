@@ -65,7 +65,7 @@ export default function CovenSelected({ item }: { item: CovenInterface }) {
         renderItem={({ item }) => <GatheringItem item={item} />}
         keyExtractor={item => item.id}
         ListEmptyComponent={
-          <Text style={styles.emptyText}>
+          <Text style={[getTypography("titleLarge", "light"), styles.emptyText]}>
             There are no gatherings on schedule
           </Text>
         }

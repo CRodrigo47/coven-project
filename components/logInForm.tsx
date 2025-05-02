@@ -26,7 +26,6 @@ export default function LoginForm() {
       // Limpiar cualquier sesión existente primero
       await supabase.auth.signOut();
       
-      // Intentar iniciar sesión
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -34,7 +33,6 @@ export default function LoginForm() {
   
       if (error) throw error;
       
-      // No necesitas esperar artificialmente ni volver a comprobar la sesión
       if (data.session) {
         router.replace('/mainTabs/gatheringTabs');
       } else {

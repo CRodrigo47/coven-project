@@ -32,13 +32,11 @@ export default function Index() {
 
   useEffect(() => {
     const subscription = Linking.addEventListener("url", ({ url }) => {
-      // Manejo de deep linking
     });
     return () => subscription.remove();
   }, []);
 
   useEffect(() => {
-    // Solo redirigir cuando todo esté cargado
     if (!loading && fontsLoaded) {
       console.log("Index session check:", session);
       if (session) {
@@ -47,9 +45,8 @@ export default function Index() {
         router.replace("/auth/LogIn");
       }
     }
-  }, [session, loading, fontsLoaded]); // Añadimos fontsLoaded como dependencia
+  }, [session, loading, fontsLoaded]);
 
-  // Mostrar loading si alguna de las condiciones no está lista
   if (loading || !fontsLoaded) {
     return (
       <View style={styles.container}>

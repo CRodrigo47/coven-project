@@ -19,14 +19,10 @@ import useGlobalStore from "@/context/useStore";
 import { useRouter } from "expo-router";
 
 const userSchema = yup.object({
-  // email removed as requested
-  // name field removed as requested
-  // last_name removed as requested
   user_name: yup
     .string()
     .required("Username is required")
     .min(3, "Minimum 3 characters"),
-  // user_icon field commented out for future implementation
   // user_icon: yup.string().nullable().default(null),
   phone_number: yup
     .string()
@@ -41,7 +37,6 @@ const userSchema = yup.object({
     .min(13, "Minimum 13 years")
     .max(120, "Maximum 120 years"),
   interests: yup.string().nullable().default(""),
-  // Password fields removed as requested
 });
 
 type UserFormData = yup.InferType<typeof userSchema>;
@@ -51,7 +46,6 @@ export default function ChangeUserInfoForm() {
   const authUserId = useGlobalStore((state: any) => state.authUserId);
   const fetchAuthUserId = useGlobalStore((state: any) => state.fetchAuthUserId);
   
-  // Image state commented out for future implementation
   // const [imageUri, setImageUri] = useState<string | null>(null);
   
   const [loading, setLoading] = useState(false);
@@ -59,7 +53,6 @@ export default function ChangeUserInfoForm() {
   const [isLoadingUserData, setIsLoadingUserData] = useState(true);
   const [userNameError, setUserNameError] = useState("");
   const [originalUserName, setOriginalUserName] = useState("");
-  // Password change state removed
   const [deletingAccount, setDeletingAccount] = useState(false);
 
   // Form control
@@ -73,29 +66,21 @@ export default function ChangeUserInfoForm() {
   } = useForm<UserFormData>({
     resolver: yupResolver(userSchema),
     defaultValues: {
-      // email removed
-      // name removed
-      // last_name removed
       user_name: "",
-      // user_icon removed
       phone_number: "",
       age: 0,
       interests: "",
-      // Password fields removed
     },
   });
 
-  // Watch username changes for validation
   const currentUserName = watch("user_name");
 
-  // Get user ID from global store
   useEffect(() => {
     if (!authUserId) {
       fetchAuthUserId();
     }
   }, [authUserId, fetchAuthUserId]);
 
-  // Check if username is unique when it changes
   useEffect(() => {
     const checkUserNameUnique = async () => {
       if (!currentUserName || currentUserName === originalUserName || currentUserName.length < 3) {
@@ -124,12 +109,12 @@ export default function ChangeUserInfoForm() {
 
     const timer = setTimeout(() => {
       checkUserNameUnique();
-    }, 500); // Debounce to avoid too many requests
+    }, 500);
 
     return () => clearTimeout(timer);
   }, [currentUserName, authUserId, originalUserName]);
 
-  // Fetch user data
+
   useEffect(() => {
     const fetchUserData = async () => {
       if (!authUserId) return;
@@ -145,30 +130,21 @@ export default function ChangeUserInfoForm() {
         if (error) throw error;
         if (!data) throw new Error("User not found");
 
-        // Set form values (including user_name but not email or last_name)
         reset({
-          // email: data.email || "", // Removed
-          // name: data.name || "", // Removed
-          // last_name: data.last_name || "", // Removed
           user_name: data.user_name || "",
-          // user_icon: data.user_icon || null, // Removed
           phone_number: data.phone_number || "",
           age: data.age || 0,
           interests: "",
-          // Password fields removed
         });
 
-        // Store original username for comparison
         setOriginalUserName(data.user_name || "");
 
-        // Set interests text
         if (data.interests && Array.isArray(data.interests)) {
           const interestsString = data.interests.join(", ");
           setInterestsText(interestsString);
           setValue("interests", interestsString);
         }
 
-        // Image setting commented out for future implementation
         /* 
         if (data.user_icon) {
           setImageUri(data.user_icon);
@@ -185,13 +161,11 @@ export default function ChangeUserInfoForm() {
     fetchUserData();
   }, [authUserId, reset, setValue]);
 
-  // Handle interests text change
   const handleInterestsChange = (text: string) => {
     setInterestsText(text);
     setValue("interests", text, { shouldValidate: true });
   };
 
-  // Handle age change
   const handleAgeChange = (text: string) => {
     const numericValue = text.replace(/[^0-9]/g, "");
     setValue("age", numericValue === "" ? 0 : Number(numericValue), {
@@ -242,9 +216,8 @@ export default function ChangeUserInfoForm() {
   };
   */
 
-  // Handle form submission
   const handleUpdateUser = async (formData: UserFormData) => {
-    // First check if username is unique
+
     if (userNameError) {
       Alert.alert("Error", "Please fix the errors before submitting");
       return;
@@ -257,10 +230,7 @@ export default function ChangeUserInfoForm() {
         throw new Error("User ID not found");
       }
       
-      // Prepare user data update (including user_name but not email or last_name)
       const updateData: any = {
-        // name: formData.name, // Removed
-        // last_name: formData.last_name, // Removed
         user_name: formData.user_name,
         phone_number: formData.phone_number || "",
         age: formData.age
@@ -276,7 +246,6 @@ export default function ChangeUserInfoForm() {
         updateData.interests = [];
       }
 
-      // Image processing commented out for future implementation
       /*
       if (imageUri) {
         try {
@@ -295,7 +264,6 @@ export default function ChangeUserInfoForm() {
 
       if (updateError) throw updateError;
 
-      // Email update logic removed
 
       Alert.alert("Success", "Your profile has been updated");
     } catch (error) {
@@ -309,8 +277,6 @@ export default function ChangeUserInfoForm() {
     }
   };
 
-  // Handle account deletion
-// Handle account deletion
 const handleDeleteAccount = async () => {
     Alert.alert(
       "Delete Account",
@@ -327,7 +293,6 @@ const handleDeleteAccount = async () => {
             try {
               setDeletingAccount(true);
               
-              // Paso 1: Eliminar el usuario de la tabla User personalizada
               const { error: userDeleteError } = await supabase
                 .from("User")
                 .delete()
@@ -335,17 +300,12 @@ const handleDeleteAccount = async () => {
                 
               if (userDeleteError) throw userDeleteError;
               
-              // Paso 2: Usar la función de Supabase para eliminar el usuario de autenticación
-              // en lugar de usar la función admin que requiere permisos especiales
               const { error: authError } = await supabase.rpc('delete_user');
               
               if (authError) throw authError;
               
-              // Paso 3: Cerrar sesión
               await supabase.auth.signOut();
               
-              // Paso 5: Navegar a la página de inicio o login
-              // Usar replace para evitar volver atrás con el botón de regreso
               router.replace("/mainTabs/logOut");
               
             } catch (error) {
@@ -459,7 +419,6 @@ const handleDeleteAccount = async () => {
         />
       </View>
 
-      {/* Password Change Section removed */}
 
       <View style={styles.submitButton}>
         {loading ? (

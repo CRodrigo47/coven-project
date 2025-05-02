@@ -52,7 +52,6 @@ export default function CovenList() {
   const skipCovenCheck = useGlobalStore((state: any) => state.skipCovenCheck);
   const setSkipCovenCheck = useGlobalStore((state: any) => state.setSkipCovenCheck);
   
-  // Accede al estado global
   const selectedCoven = useGlobalStore((state: any) => state.selectedCoven);
   const resetSelections = useGlobalStore((state: any) => state.resetSelections);
   
@@ -100,7 +99,6 @@ export default function CovenList() {
       
       if (!covenExists) {
         console.log(`Coven con ID ${selectedCoven.id} no encontrado en la lista de ${allCoven.length} Covens`);
-        // Imprimir IDs de los Covens en la lista para diagnóstico
         allCoven.forEach(coven => console.log(`Coven en lista: ${coven.id}`));
         
         resetSelections();

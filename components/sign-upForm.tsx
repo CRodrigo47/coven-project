@@ -176,7 +176,7 @@ export default function RegisterForm() {
         name: formData.name,
         last_name: formData.last_name,
         user_name: formData.user_name,
-        user_icon: null, // Dejamos la imagen como null por ahora
+        user_icon: null,
         phone_number: formData.phone_number,
         age: formData.age,
         interests: formData.interests

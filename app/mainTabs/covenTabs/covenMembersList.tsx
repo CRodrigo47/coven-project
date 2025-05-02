@@ -29,7 +29,6 @@ export default function CovenMembersList() {
     setError(null);
     
     try {
-      // Consulta para obtener los user_id de los miembros del Coven seleccionado
       const { data: memberRelations, error: membersError } = await supabase
         .from("_Members_")
         .select("user_id")
@@ -40,7 +39,6 @@ export default function CovenMembersList() {
       if (memberRelations && memberRelations.length > 0) {
         const memberIds = memberRelations.map(relation => relation.user_id);
         
-        // Consulta para obtener los datos completos de los usuarios
         const { data: membersData, error: usersError } = await supabase
           .from("User")
           .select("*")

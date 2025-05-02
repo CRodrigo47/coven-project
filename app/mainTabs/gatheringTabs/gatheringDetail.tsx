@@ -39,7 +39,6 @@ export default function GatheringDetail() {
   );
   const [guestList, setGuestList] = useState<GuestWithUserIcon[]>([]);
 
-  // Function to refresh guest list
   const refreshGuestList = async () => {
     if (!selectedGathering?.id) return;
     
@@ -70,7 +69,6 @@ export default function GatheringDetail() {
     return timeString.substring(0, 5);
   };
 
-  // Check if we have valid coordinates to display the map
   const hasValidCoordinates = 
     selectedGathering?.latitude != null && 
     selectedGathering?.longitude != null;
@@ -164,7 +162,7 @@ export default function GatheringDetail() {
             <GuestItem 
               key={item.user_id} 
               item={item} 
-              onGuestUpdate={refreshGuestList} // Pasamos la función de actualización a cada GuestItem
+              onGuestUpdate={refreshGuestList}
             />
           ))
         ) : (
@@ -247,7 +245,7 @@ const styles = StyleSheet.create({
     textAlign: "center"
   },
   guestListWrapper: {
-    minHeight: 200, // Altura mínima para que se vea bien
+    minHeight: 200,
   },
   emptyListText: {
     color: "black",

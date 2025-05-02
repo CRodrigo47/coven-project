@@ -1,6 +1,6 @@
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { Text, TouchableOpacity, View } from "react-native";
+import { Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { UserSearchModal } from "@/components/UserSearchModal";
 import { COLORS } from "@/constants/COLORS";

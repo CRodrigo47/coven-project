@@ -44,7 +44,7 @@ export default function InviteQR() {
           friend_id: item.friend_id
         })).filter(item => item.user_name) || [];
   
-        console.log("Friends fetched:", formattedFriends); // Añadir para depuración
+        console.log("Friends fetched:", formattedFriends);
         setFriendList(formattedFriends);
       } catch (error) {
         console.error("Error fetching friends with join:", error);
@@ -52,7 +52,7 @@ export default function InviteQR() {
     };
   
     fetchFriends();
-  }, [authUserId])); // Añadir userId como dependencia
+  }, [authUserId]));
 
   const handleAddFriendToCoven = async (friendId: string) => {
     const newRow = {

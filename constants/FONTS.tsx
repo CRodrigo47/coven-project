@@ -1,4 +1,4 @@
-// No necesitas importar las fuentes aquí, solo definir los nombres que usarás
+
 export const FONTS = {
   regular: 'BeVietnamPro_400Regular',
   bold: 'BeVietnamPro_700Bold',
@@ -9,5 +9,5 @@ export const FONTS = {
   medium: 'BeVietnamPro_500Medium',
 };
   
-  // Tipos para TypeScript (opcional pero recomendado)
+
   export type FontFamily = keyof typeof FONTS;

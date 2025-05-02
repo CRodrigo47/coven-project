@@ -5,7 +5,6 @@ import { createContext, PropsWithChildren, useContext, useEffect, useState } fro
 type AuthData = {
   session: Session | null;
   loading: boolean;
-  // Elimina setSession del contexto (no debe exponerse)
 };
 
 const AuthContext = createContext<AuthData>({
@@ -34,14 +33,13 @@ export default function AuthProvider({ children }: PropsWithChildren) {
         setSession(session);
         setLoading(false);
         
-        // Fuerza una verificación adicional después del cambio
         if (event === 'SIGNED_IN') {
-          setTimeout(getSession, 500); // Espera 500ms y verifica nuevamente
+          setTimeout(getSession, 500);
         }
       }
     });
   
-    getSession(); // Carga inicial
+    getSession();
   
     return () => {
       mounted = false;

@@ -1,7 +1,6 @@
 import { COLORS } from "@/constants/COLORS";
 import { getTypography } from "@/constants/TYPOGRAPHY";
 import useGlobalStore from "@/context/useStore";
-import { supabase } from "@/lib/supabase";
 import { useRouter, usePathname } from "expo-router";
 import { useEffect, useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -29,7 +28,6 @@ export default function CreateCovenButton() {
         if (isDetailPage && selectedCoven && authUserId) {
             setIsOwner(selectedCoven.created_by === authUserId);
         } else if (!isDetailPage) {
-            // Always show create button on non-detail pages
             setIsOwner(true);
         }
     }, [isDetailPage, selectedCoven, authUserId]);

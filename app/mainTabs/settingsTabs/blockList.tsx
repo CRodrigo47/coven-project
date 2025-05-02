@@ -19,7 +19,6 @@ export default function BlockList() {
   const authUserId = useGlobalStore((state: any) => state.authUserId);
   const fetchAuthUserId = useGlobalStore((state: any) => state.fetchAuthUserId);
 
-  // Obtener el ID del usuario autenticado cuando el componente se monta
   useEffect(() => {
     if (!authUserId) {
       fetchAuthUserId();
@@ -27,7 +26,6 @@ export default function BlockList() {
   }, [authUserId, fetchAuthUserId]);
 
   const fetchBlockedUsers = useCallback(async () => {
-    // Si no tenemos el ID del usuario autenticado, intentamos obtenerlo
     let currentUserId = authUserId;
     if (!currentUserId) {
       currentUserId = await fetchAuthUserId();
@@ -42,7 +40,6 @@ export default function BlockList() {
     setError(null);
     
     try {
-      // Obtener IDs de usuarios bloqueados de la tabla _Block-list_
       const { data: blockRelations, error: blocksError } = await supabase
         .from("_Block-list_")
         .select("block_id")
@@ -53,7 +50,6 @@ export default function BlockList() {
       if (blockRelations && blockRelations.length > 0) {
         const blockedIds = blockRelations.map(relation => relation.block_id);
         
-        // Obtener datos completos de los usuarios bloqueados
         const { data: blockedData, error: usersError } = await supabase
           .from("User")
           .select("*")

@@ -109,7 +109,6 @@ export default function CreateGatheringForm() {
     }
   }, [authUserId, fetchAuthUserId]);
 
-  // Determine if we're in update mode
   useEffect(() => {
     if (selectedGathering) {
       setIsUpdateMode(true);
@@ -151,7 +150,6 @@ export default function CreateGatheringForm() {
 
         setLoadingLocation(true);
 
-        // If we have a selected gathering, use its coordinates
         if (selectedGathering) {
           const gatheringCoords = {
             latitude: selectedGathering.latitude,
@@ -165,7 +163,6 @@ export default function CreateGatheringForm() {
             longitudeDelta: 0.0421,
           });
         } else {
-          // Otherwise, use current location
           let location = await Location.getCurrentPositionAsync({
             accuracy: Location.Accuracy.High,
           });
@@ -216,7 +213,6 @@ export default function CreateGatheringForm() {
     },
   });
 
-  // Populate form when in update mode
   useEffect(() => {
     if (selectedGathering) {
       // Format date from ISO string to Date object
@@ -239,7 +235,6 @@ export default function CreateGatheringForm() {
         timeString = timeString.split(":").slice(0, 2).join(":");
       }
 
-      // Set form values
       reset({
         name: selectedGathering.name || "",
         location_name: selectedGathering.location_name || "",
@@ -254,12 +249,10 @@ export default function CreateGatheringForm() {
         advertisement: selectedGathering.advertisement || null,
       });
 
-      // Set switch states
       setHasCost(!!selectedGathering.cost);
       setHasMeal(!!selectedGathering.meal);
       setHasExtraInfo(!!selectedGathering.extra_info);
 
-      // Set tags text
       setTagsText(
         selectedGathering.tags ? selectedGathering.tags.join(", ") : ""
       );
@@ -297,7 +290,6 @@ export default function CreateGatheringForm() {
       let error;
 
       if (isUpdateMode && selectedGathering) {
-        // Update existing gathering
         const { data: updatedData, error: updateError } = await supabase
           .from("Gathering")
           .update(gatheringData)
@@ -312,7 +304,6 @@ export default function CreateGatheringForm() {
           Alert.alert("Success", "Gathering updated successfully");
         }
       } else {
-        // Create new gathering
         const { data: newData, error: createError } = await supabase
           .from("Gathering")
           .insert([
@@ -352,7 +343,6 @@ export default function CreateGatheringForm() {
   const handleDeleteGathering = async () => {
     if (!selectedGathering) return;
 
-    // Show confirmation dialog
     Alert.alert(
       "Delete Gathering",
       "Are you sure you want to delete this gathering? This action cannot be undone.",

@@ -25,19 +25,19 @@ export const TYPOGRAPHY: Record<
   TypographyVariant, 
   Record<ThemeMode, TextStyle>
 > = {
-  // Display Text (Para textos muy grandes)
+
   displayLarge: {
     light: {
       fontFamily: FONTS.regular,
       fontSize: 57,
       lineHeight: 64,
-      color: COLORS.black, // Texto negro en modo light
+      color: COLORS.black,
     },
     dark: {
       fontFamily: FONTS.regular,
       fontSize: 57,
       lineHeight: 64,
-      color: COLORS.white, // Texto blanco en modo dark
+      color: COLORS.white,
     },
   },
   displayMedium: {
@@ -69,7 +69,6 @@ export const TYPOGRAPHY: Record<
     },
   },
 
-  // Headlines (Para títulos importantes)
   headlineLarge: {
     light: {
       fontFamily: FONTS.semiBold,
@@ -113,7 +112,6 @@ export const TYPOGRAPHY: Record<
     },
   },
 
-  // Titles (Para subtítulos)
   titleLarge: {
     light: {
       fontFamily: FONTS.semiBold,
@@ -157,7 +155,6 @@ export const TYPOGRAPHY: Record<
     },
   },
 
-  // Body Text (Para texto normal)
   bodyLarge: {
     light: {
       fontFamily: FONTS.medium,
@@ -201,7 +198,6 @@ export const TYPOGRAPHY: Record<
     },
   },
 
-  // Labels (Para etiquetas y botones)
   labelLarge: {
     light: {
       fontFamily: FONTS.medium,
@@ -252,7 +248,6 @@ export const TYPOGRAPHY: Record<
   },
 };
 
-// Helper function para facilitar el uso
 export const getTypography = (
   variant: TypographyVariant,
   theme: ThemeMode

@@ -1,4 +1,4 @@
-import { GuestInterface, GuestWithUserIcon } from "@/app/interfaces/guestInterface";
+import { GuestWithUserIcon } from "@/app/interfaces/guestInterface";
 import useGlobalStore from "@/context/useStore";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "expo-router";
@@ -10,18 +10,18 @@ import { Ionicons } from "@expo/vector-icons";
 
 export default function GuestItem({ item, onGuestUpdate }: { 
     item: GuestWithUserIcon,
-    onGuestUpdate?: () => void  // New callback prop
+    onGuestUpdate?: () => void
 }) {
     const router = useRouter();
     const setSelectedUser = useGlobalStore((state: any) => state.setSelectedUser);
     const selectedGathering = useGlobalStore((state: any) => state.selectedGathering);
     
-    // State for modals
+
     const [infoModalVisible, setInfoModalVisible] = useState(false);
     const [expenseModalVisible, setExpenseModalVisible] = useState(false);
     const [statusModalVisible, setStatusModalVisible] = useState(false);
     
-    // State for current user
+
     const [isCurrentUser, setIsCurrentUser] = useState(false);
     const authUserId = useGlobalStore((state: any) => state.authUserId);
     const fetchAuthUserId = useGlobalStore((state: any) => state.fetchAuthUserId);
@@ -33,21 +33,18 @@ export default function GuestItem({ item, onGuestUpdate }: {
       }
     }, [authUserId, fetchAuthUserId]);
     
-    // State for expense management
+
     const [newExpenseAmount, setNewExpenseAmount] = useState("");
     const [guestList, setGuestList] = useState<GuestWithUserIcon[]>([]);
     const [selectedGuests, setSelectedGuests] = useState<{[key: string]: boolean}>({});
     
-    // State for local expense tracking (for immediate UI update)
     const [localExpense, setLocalExpense] = useState<number | null | undefined>(item.expenses);
     
-    // State for remarks
     const [userRemarks, setUserRemarks] = useState<string | null | undefined>(item.remarks);
     
-    // State for local arriving status
     const [localArrivingStatus, setLocalArrivingStatus] = useState<string>(item.arriving_status);
     
-    // Check if this item belongs to the current authenticated user
+
     useEffect(() => {
         const fetchCurrentUser = async () => {
             try {
@@ -62,12 +59,10 @@ export default function GuestItem({ item, onGuestUpdate }: {
         fetchCurrentUser();
     }, [item.user_id]);
 
-    // Update local expense when item changes
     useEffect(() => {
         setLocalExpense(item.expenses);
     }, [item.expenses]);
     
-    // Fetch all guests for the expense distribution
     useEffect(() => {
         const fetchAllGuests = async () => {
             if (!selectedGathering?.id) return;
@@ -88,7 +83,6 @@ export default function GuestItem({ item, onGuestUpdate }: {
                 
                 setGuestList(data || []);
                 
-                // Initialize all guests as selected by default
                 const initialSelection = {};
                 data?.forEach(guest => {
                     initialSelection[guest.user_id] = true;
@@ -147,7 +141,6 @@ export default function GuestItem({ item, onGuestUpdate }: {
         return `${value > 0 ? '+' : ''}${value}€`;
     };
     
-    // Handle saving remarks
     const saveRemarks = async () => {
         if (!isCurrentUser || !authUserId) return;
         
@@ -177,7 +170,6 @@ export default function GuestItem({ item, onGuestUpdate }: {
             return;
         }
         
-        // Get list of selected users (the ones who consumed)
         const selectedUserIds = Object.keys(selectedGuests).filter(userId => selectedGuests[userId]);
         
         // Check if at least one user is selected
@@ -241,12 +233,10 @@ export default function GuestItem({ item, onGuestUpdate }: {
             setExpenseModalVisible(false);
             setNewExpenseAmount("");
             
-            // Call the callback to refresh the parent component
             if (onGuestUpdate) {
                 onGuestUpdate();
             }
             
-            // Success message
             Alert.alert("Success", "Expense added and distributed successfully");
             
         } catch (error) {
@@ -255,12 +245,10 @@ export default function GuestItem({ item, onGuestUpdate }: {
         }
     };
     
-    // Handle changing arrival status
     const updateArrivingStatus = async (status: string) => {
         if (!isCurrentUser || !authUserId) return;
         
         try {
-            // Update local state first for immediate UI update
             setLocalArrivingStatus(status);
             
             const { error } = await supabase
@@ -276,7 +264,6 @@ export default function GuestItem({ item, onGuestUpdate }: {
         } catch (error) {
             console.error("Error updating status:", error);
             Alert.alert("Error", "Failed to update arrival status");
-            // Revert to previous status if there was an error
             setLocalArrivingStatus(item.arriving_status);
         }
     };
@@ -508,7 +495,6 @@ export default function GuestItem({ item, onGuestUpdate }: {
     );
 }
 
-// Helper function to get status icons
 const getStatusIcon = (status: string, isCurrentUser: boolean) => {
     switch (status) {
         case "Soon":

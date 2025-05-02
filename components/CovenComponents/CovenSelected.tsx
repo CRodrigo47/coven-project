@@ -13,7 +13,6 @@ export default function CovenSelected({ item }: { item: CovenInterface }) {
   const [historyGatherings, setHistoryGatherings] = useState<GatheringInterface[]>([]);
 
   const fetchAndFilterGatherings = useCallback(async () => {
-        // Verificar que item existe y tiene un id
         if (!item || !item.id) {
           console.log('No valid Coven selected');
           setNextGatherings([]);

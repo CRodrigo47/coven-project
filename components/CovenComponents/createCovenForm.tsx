@@ -48,18 +48,14 @@ export default function CreateCovenForm() {
     }
   }, [authUserId, fetchAuthUserId]);
   
-  // Get selected coven from global store - we'll still use it for the data
-  // but we won't depend on it for determining the mode
   const selectedCoven = useGlobalStore((state: any) => state.selectedCoven);
   const setSelectedCoven = useGlobalStore((state: any) => state.setSelectedCoven);
   const resetSelections = useGlobalStore((state: any) => state.resetSelections)
 
-  // Determine if we're in update mode based on the 'from' route parameter
   useEffect(() => {
     const isFromDetailPage = from === "/mainTabs/covenTabs/covenDetail";
     setIsUpdateMode(isFromDetailPage);
     
-    // Only load data from selectedCoven when in update mode
     if (isFromDetailPage && selectedCoven) {
       setIsEnabled(selectedCoven.is_public || false);
       // setImageUri(selectedCoven.coven_icon || null);
@@ -82,7 +78,6 @@ export default function CreateCovenForm() {
     },
   });
 
-  // Populate form when in update mode
   useEffect(() => {
     if (isUpdateMode && selectedCoven) {
       reset({
@@ -115,7 +110,6 @@ export default function CreateCovenForm() {
       let error;
       
       if (isUpdateMode && selectedCoven) {
-        // Update existing coven
         const { data: updatedData, error: updateError } = await supabase
           .from("Coven")
           .update({
@@ -133,7 +127,6 @@ export default function CreateCovenForm() {
           Alert.alert("Success", "Coven updated successfully");
         }
       } else {
-        // Create new coven
         const covenData = {
           ...formData,
           created_at: new Date().toISOString(),
@@ -151,7 +144,6 @@ export default function CreateCovenForm() {
         error = createError;
 
         if (!error) {
-          // Insertar el usuario como miembro del nuevo Coven
           const { error: memberError } = await supabase
             .from("_Members_")
             .insert([
@@ -179,11 +171,9 @@ export default function CreateCovenForm() {
           {
             text: "OK",
             onPress: () => {
-              // Navegar solo después de que el usuario confirme la alerta
               if (isUpdateMode) {
                 router.push("/mainTabs/covenTabs/covenDetail");
               } else {
-                // Para crear un nuevo Coven, navegamos directamente al detalle después de un breve retraso
                 setTimeout(() => {
                   router.replace("/mainTabs/covenTabs/covenDetail");
                 }, 500);
@@ -210,7 +200,6 @@ export default function CreateCovenForm() {
   const handleDeleteCoven = async () => {
     if (!selectedCoven) return;
     
-    // Show confirmation dialog
     Alert.alert(
       "Delete Coven",
       "Are you sure you want to delete this coven? This action cannot be undone.",
@@ -233,8 +222,7 @@ export default function CreateCovenForm() {
   
               if (error) throw error;
   
-              // Limpiar completamente el estado global
-              resetSelections(); // Usar la función resetSelections en lugar de solo setSelectedCoven(null)
+              resetSelections();
               
               Alert.alert(
                 "Success", 
@@ -243,7 +231,6 @@ export default function CreateCovenForm() {
                   {
                     text: "OK",
                     onPress: () => {
-                      // Importante: necesitamos asegurarnos de que la navegación se resetea correctamente
                       router.navigate("/mainTabs/covenTabs/");
                     }
                   }

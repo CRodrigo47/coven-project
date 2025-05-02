@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { Alert, StyleSheet, Text, View, TouchableOpacity, Modal, Switch, TextInput } from "react-native";
 import { COLORS } from "@/constants/COLORS";
 import { FONTS } from "@/constants/FONTS";
-import { Ionicons } from "@expo/vector-icons";
 
 interface JoinGatheringButtonProps {
   onGuestStatusChange?: () => void;
@@ -17,13 +16,11 @@ export default function JoinGatheringButton({ onGuestStatusChange }: JoinGatheri
   const [alreadyJoined, setAlreadyJoined] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   
-  // States for join modal
   const [joinModalVisible, setJoinModalVisible] = useState<boolean>(false);
   const [hasRemarks, setHasRemarks] = useState<boolean>(false);
   const [userRemarks, setUserRemarks] = useState<string | null>(null);
   const [arrivingStatus, setArrivingStatus] = useState<string>("On time");
   
-  // State for leave modal
   const [leaveModalVisible, setLeaveModalVisible] = useState<boolean>(false);
 
   const authUserId = useGlobalStore((state: any) => state.authUserId);
@@ -94,7 +91,6 @@ export default function JoinGatheringButton({ onGuestStatusChange }: JoinGatheri
       setAlreadyJoined(true);
       setJoinModalVisible(false);
       
-      // Notify parent component to refresh the guest list
       if (onGuestStatusChange) {
         onGuestStatusChange();
       }
@@ -119,7 +115,6 @@ export default function JoinGatheringButton({ onGuestStatusChange }: JoinGatheri
       setAlreadyJoined(false);
       setLeaveModalVisible(false);
       
-      // Notify parent component to refresh the guest list
       if (onGuestStatusChange) {
         onGuestStatusChange();
       }

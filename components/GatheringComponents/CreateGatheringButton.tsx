@@ -1,8 +1,7 @@
 import { COLORS } from "@/constants/COLORS";
 import { usePathname, useRouter } from "expo-router";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native"; // Ajusta la ruta según tu estructura
-import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase"; // Ajusta la ruta según tu estructura
+import { useEffect } from "react";
 import useGlobalStore from "@/context/useStore";
 import { getTypography } from "@/constants/TYPOGRAPHY";
 

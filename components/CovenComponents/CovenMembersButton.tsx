@@ -1,5 +1,4 @@
 import { COLORS } from "@/constants/COLORS";
-import { getTypography } from "@/constants/TYPOGRAPHY";
 import { useRouter } from "expo-router";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
